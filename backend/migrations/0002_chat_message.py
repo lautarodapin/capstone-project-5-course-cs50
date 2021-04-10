@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('members', models.ManyToManyField(related_name='chats', to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'ordering': ['-created_at'],
+                'ordering': ['created_at'],
                 'abstract': False,
             },
         ),
@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='messages', to=settings.AUTH_USER_MODEL)),
             ],
             options={
-                'ordering': ['-created_at'],
+                'ordering': ['created_at'],
                 'abstract': False,
             },
         ),

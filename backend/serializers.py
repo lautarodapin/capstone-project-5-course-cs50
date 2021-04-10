@@ -18,7 +18,7 @@ class ChatSerializer(ModelSerializer):
     class Meta:
         model = Chat
         depth = 2
-        fields = ["id", "members", "is_group", "chat_name", "messages", "created_at", "mod_at",]
+        fields = ["id", "members", "is_group", "chat_name", "messages", "created_at", "mod_at", ]
 
 
 class UserSerializer(ModelSerializer):
@@ -27,7 +27,7 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         depth = 2
-        fields = ["id", "username", "password", "last_login", "token", ]
+        fields = ["id", "username", "password", "last_login", "token", "chats", "messages",]
         extra_kwargs = {
             'password': {'write_only': True},
             'last_login': {'read_only': True},

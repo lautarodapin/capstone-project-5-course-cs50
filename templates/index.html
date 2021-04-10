@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://unpkg.com/vue-router@4"></script>
+    <script src="https://unpkg.com/vuex@next"></script>
+
+    <title>Chat App</title>
+</head>
+<body>
+    <div id="app">
+        <header>
+                <router-link to="/foo">Go to Foo</router-link>
+                <router-link to="/bar">Go to Bar</router-link>
+        </header>
+        <main>
+            <router-view></router-view>
+        </main>
+    </div>
+    <footer>
+        <script src="{% static 'js/app.js' %}"></script>
+    </footer>
+</body>
+</html>

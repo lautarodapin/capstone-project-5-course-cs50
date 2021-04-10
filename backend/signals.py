@@ -6,5 +6,5 @@ from .models import (User)
 
 @receiver(signal=post_save, sender=User)
 def create_token_after_save(sender, instance: User, created, **kwargs):
-    if not instance.auth_token.exists():
+    if created:
         Token.objects.create(user=instance)

@@ -17,7 +17,7 @@ class User(AbstractUser):
 class Chat(MixinDate):
     class Meta:
         abstract = False
-        ordering = ["-created_at"]
+        ordering = ["created_at"]
 
     members = models.ManyToManyField(User, related_name="chats")
     is_group = models.BooleanField(default=False)
@@ -27,7 +27,7 @@ class Chat(MixinDate):
 class Message(MixinDate):
     class Meta:
         abstract = False
-        ordering = ["-created_at"]
+        ordering = ["created_at"]
 
     user = models.ForeignKey(User, related_name="messages", on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, related_name="messages", on_delete=models.CASCADE, db_index=True)
