@@ -2,6 +2,17 @@ const {createApp} = Vue
 const {createRouter, createWebHistory} = VueRouter
 const {createStore} = Vuex
 
+function readCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+
 const store = createStore({
     state(){return{
         currentUser: null,
@@ -78,14 +89,36 @@ const store = createStore({
 const ContactPage = {
     template: `
     <div>
-        <div v-for="user in users" :key="user.id" style="botder: 1px solid black">
+        <h3>Contacts page</h3>
+        <div v-for="user in users" :key="user.id" style="border: 1px solid black">
         {{user}}
+        <button @click="createChat(user)">Chat with him</button>
         </div>
     </div>
-    `,
+    `, 
     data(){return{
         users:[],
     }},
+    methods:{
+        createChat(user){
+            const data = {
+                members: [user.id, this.currentUser.id],
+            }
+            axios.post("/api/chats/create_chat_with/", data, {headers: {"X-CSRFToken":readCookie("csrftoken") }})
+            .then(response => {
+                console.log(response);
+                this.$router.push({name:"ChatPage", params:{id:response.data.id}})
+                // TODO redirect to chat window
+            })
+            .catch(error => {
+                console.log(error.response)
+                alert(error.response.data.errors)
+            })
+        },
+    },
+    computed: {
+        currentUser(){return this.$store.getters.user;},
+    },
     created(){
         this.$store.dispatch("getUserContacts")
         .then(response => {
@@ -94,10 +127,11 @@ const ContactPage = {
     }
 }
 
-const ChatPage = {
+const ListChatPage = {
     template: `
     <div>
         <div v-if="status === 'done'">
+            <h3>Chats Page</h3>
             <div v-for="chat in chats" :key="chat.id" style="border: 1px solid black">
                 {{chat}}
             </div>
@@ -124,6 +158,18 @@ const ChatPage = {
     }
 }
 
+const ChatPage = {
+    template: `
+        <div>{{id}}</div>
+    `,
+    data(){return{}},
+    computed: {
+        id(){return this.$route.params.id;}
+    },
+    methods:{},
+    created(){},
+}
+
 const app = createApp({
     el:"#app",
     delimiters: ["[[", "]]"],
@@ -136,11 +182,13 @@ const app = createApp({
     },
     created(){
         // this.$store.dispatch("login")
+        // axios.defaults.headers.common["HTTP_X_XSRF_TOKEN"] = readCookie("csrftoken")
     }
 })
 const routes = [
-    { path: '/', name:"ChatPage", component: ChatPage },
+    { path: '/', name:"ListChatPage", component: ListChatPage },
     { path: '/contacts', name:"ContactPage", component: ContactPage },
+    { path: '/chat/:id', name:"ChatPage", component: ChatPage },
   ]
 const router = createRouter({
     routes,

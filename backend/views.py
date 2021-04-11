@@ -1,3 +1,4 @@
+from typing import List
 from django.http.response import HttpResponseRedirect
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
@@ -30,10 +31,29 @@ class UserViewset(ModelViewSet):
         serializer = UserSerializer(instance=users, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+
+
 class ChatViewset(ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["post"])
+    def create_chat_with(self, request):
+        queryset = self.get_queryset()
+        user : User = request.user
+        members: List[int] = request.data.get("members")
+        if queryset.filter(members__in=members).distinct().exists(): # If the chat already exist return that.
+            serializer : ChatSerializer = ChatSerializer(instance=queryset.filter(members__in=members).distinct().first(), many=False)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        serializer : ChatSerializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        chat : Chat = serializer.instance
+        for member in members:
+            chat.members.add(member)
+        chat.save()
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 class MessageViewset(ModelViewSet):
     queryset = Message.objects.all()

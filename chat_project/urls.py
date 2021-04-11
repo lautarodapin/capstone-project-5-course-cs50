@@ -18,7 +18,8 @@ from django.urls import path, include
 from django.shortcuts import render
 from django.urls.conf import re_path
 from backend.views import login_view, register, logout_view
-index_view = lambda r: render(r, "index.html")
+from django.views.decorators.csrf import ensure_csrf_cookie
+index_view = ensure_csrf_cookie(lambda r: render(r, "index.html"))
 
 urlpatterns = [
     path('admin/', admin.site.urls),
