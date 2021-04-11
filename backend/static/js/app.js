@@ -157,6 +157,19 @@ const ListChatPage = {
     }
 }
 
+const MessageForm = {
+    template: `
+    <form @submit.prevent="$emit('submitForm', message)">
+        <input type="text" v-model="form.message"/>
+        <input type="submit" value="Send"/>
+    </form>
+    `,
+    emits:["submitForm"],
+    data(){return{
+        message: "",
+    }},
+}
+
 const ChatPage = {
     template: `
         <div>{{id}}
@@ -164,19 +177,57 @@ const ChatPage = {
                 {{member.username}}
             </div>
             <div v-for="message in messages" :key="message.id" style="border: 1px solid black">
-                {{message.user.username}}: {{message.text}}
+                {{message.created_at}} {{message.user.username}}: {{message.text}}
             </div>
+            <MessageForm @submitForm="createMessage" />
         </div>
     `,
+    components:{MessageForm, },
     data(){return{
+        messageForm:{message:""},
         messages: [],
         members: [],
         chat:[],
+        ws: null,
     }},
     computed: {
-        id(){return this.$route.params.id;}
+        id(){return this.$route.params.id;},
+        currentUser(){return this.$store.getters.user;},
     },
     methods:{
+        createMessage(message){
+            console.log(this.messageForm.message)
+            const data = {
+                type: "chat_message",
+                user: this.currentUser.id,
+                message: message,
+            }
+            this.ws.send(JSON.stringify(data))
+        },
+        createWebsocket(){
+            self = this;
+            this.ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${this.id}/`)
+            this.ws.onmessage = function(response){
+                const data = JSON.parse(response.data)
+                console.log(response, data)
+                switch (data.type) {
+                    case "chat_message":
+                        self.messages.push(data.data)
+                        break;
+                
+                    default:
+                        break;
+                }
+            }
+            this.onclose = function(e){
+                console.log(e)
+                setTimeout(function(){self.createWebsocket;}, 1000 * 10);
+            }
+            this.onerror = function(e){
+                console.log(e)
+                self.ws.close();
+            }
+        },
         getMessages(){
             return new Promise((resolve, reject) => {
                 axios.get(`/api/messages/messages_in_chat/?chat_id=${this.id}`)
@@ -214,6 +265,7 @@ const ChatPage = {
         .catch(([chat_error, message_error]) => {
             console.log(error)
         })
+        this.createWebsocket();
     },
 }
 
