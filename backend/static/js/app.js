@@ -108,7 +108,6 @@ const ContactPage = {
             .then(response => {
                 console.log(response);
                 this.$router.push({name:"ChatPage", params:{id:response.data.id}})
-                // TODO redirect to chat window
             })
             .catch(error => {
                 console.log(error.response)
@@ -160,14 +159,62 @@ const ListChatPage = {
 
 const ChatPage = {
     template: `
-        <div>{{id}}</div>
+        <div>{{id}}
+            <div v-for="member in members" :key="member.id" style="border: 1px solid red">
+                {{member.username}}
+            </div>
+            <div v-for="message in messages" :key="message.id" style="border: 1px solid black">
+                {{message.user.username}}: {{message.text}}
+            </div>
+        </div>
     `,
-    data(){return{}},
+    data(){return{
+        messages: [],
+        members: [],
+        chat:[],
+    }},
     computed: {
         id(){return this.$route.params.id;}
     },
-    methods:{},
-    created(){},
+    methods:{
+        getMessages(){
+            return new Promise((resolve, reject) => {
+                axios.get(`/api/messages/messages_in_chat/?chat_id=${this.id}`)
+                .then(response => {
+                    console.log(response)
+                    resolve(response)
+                })
+                .catch(error => {
+                    console.log(error.response)
+                    reject(error.response)
+                })
+            })
+        },
+        getChat(){
+            return new Promise((resolve, reject)=>{
+                axios.get(`/api/chats/${this.id}/`)
+                .then(response => {
+                    resolve(response)
+                })
+                .catch(error=>{
+                    reject(error.response)
+                })
+            })
+        },
+    },
+    created(){
+        // this.getMessages()
+        Promise.all([this.getChat(), this.getMessages()])
+        .then(([chat_response, message_response]) => {
+            console.log("values", chat_response, message_response)
+            this.chat = chat_response.data;
+            this.messages = message_response.data.results;
+            this.members = chat_response.data.members;
+        })
+        .catch(([chat_error, message_error]) => {
+            console.log(error)
+        })
+    },
 }
 
 const app = createApp({
@@ -185,15 +232,18 @@ const app = createApp({
         // axios.defaults.headers.common["HTTP_X_XSRF_TOKEN"] = readCookie("csrftoken")
     }
 })
+
 const routes = [
     { path: '/', name:"ListChatPage", component: ListChatPage },
     { path: '/contacts', name:"ContactPage", component: ContactPage },
     { path: '/chat/:id', name:"ChatPage", component: ChatPage },
   ]
+
 const router = createRouter({
     routes,
     history: createWebHistory(),
 })
+
 router.beforeEach(async (to, from, next) => {
     /* If not login push to register or login? */
     store.dispatch("login").then(user => {

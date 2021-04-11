@@ -12,6 +12,8 @@ from django.contrib.auth import authenticate, login, logout
 from .models import (User, Chat, Message)
 from .serializers import (UserSerializer, ChatSerializer, MessageSerializer)
 import json
+
+
 class UserViewset(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -30,7 +32,6 @@ class UserViewset(ModelViewSet):
         users = self.get_queryset().exclude(username=user.username)
         serializer = UserSerializer(instance=users, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
-
 
 
 class ChatViewset(ModelViewSet):
@@ -55,10 +56,20 @@ class ChatViewset(ModelViewSet):
         chat.save()
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
+
 class MessageViewset(ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["get"])
+    def messages_in_chat(self, request):
+        chat_id = request.query_params.get("chat_id")
+        queryset = self.get_queryset().filter(chat_id=chat_id)
+        page = self.paginate_queryset(queryset)
+        serializer = MessageSerializer(instance=page, many=True)
+        return self.get_paginated_response(serializer.data)
+
 
 class CurrentUserView(APIView):
     # authentication_classes = [IsAuthenticated]
@@ -68,6 +79,7 @@ class CurrentUserView(APIView):
             serializer = UserSerializer(instance=request.user)
             return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_404_NOT_FOUND)
+
 
 def login_view(request):
     if request.method == "POST":
