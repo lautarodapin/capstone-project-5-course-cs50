@@ -39,3 +39,7 @@ class UserSerializer(ModelSerializer):
     def validate_password(self, value):
         user = self.context["request"].user
         validate_password(password=value, user=user)
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
