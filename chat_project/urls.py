@@ -17,13 +17,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import render
 from django.urls.conf import re_path
-
+from backend.views import login_view, register, logout_view
 index_view = lambda r: render(r, "index.html")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("accounts/login/", login_view, name="login"),
+    path("accounts/logout/", logout_view, name="logout"),
+    path("accounts/register/", register, name="register"),
     path('api/', include("backend.urls")),
-    re_path(r'^(?P<path>.*)/$', index_view),
-    path('', index_view),
+    re_path(r'^(?:.*)/?$', index_view, name="index"),
 
 ]

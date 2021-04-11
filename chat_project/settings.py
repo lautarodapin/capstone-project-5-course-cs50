@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'rest_framework',
     'rest_framework.authtoken',
-    'channels',
+    # 'channels',
     'backend.apps.BackendConfig',
 ]
 
