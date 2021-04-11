@@ -49,16 +49,57 @@ const store = createStore({
                     reject(error.response)
                 })
             })
-        }
+        },
+        getCurrentChats({commit}){
+            return new Promise((resolve, reject) => {
+                axios.get("/api/users/current_chats/")
+                .then(response => {
+                    console.log("getCurrentChats", response)
+                    resolve(response)
+                })
+                .catch(error => {
+                    reject(error.response)
+                })
+            })
+        },
+        getUserContacts({commit}){
+            return new Promise((resolve, reject)=>{
+                axios.get("/api/users/contacts/")
+                .then(response => {
+                    console.log("getUserContacts", response)
+                    resolve(response)
+                })
+                .catch(error => reject(error.response))
+            })
+        },
     }
 })
 
-const Home = {
+const ContactPage = {
+    template: `
+    <div>
+        <div v-for="user in users" :key="user.id" style="botder: 1px solid black">
+        {{user}}
+        </div>
+    </div>
+    `,
+    data(){return{
+        users:[],
+    }},
+    created(){
+        this.$store.dispatch("getUserContacts")
+        .then(response => {
+            this.users = response.data
+        })
+    }
+}
+
+const ChatPage = {
     template: `
     <div>
         <div v-if="status === 'done'">
-            <div v-for="_user in users" :key="user.id" style="border: 1px solid black">
-                {{user}}
+            <div v-for="chat in chats" :key="chat.id" style="border: 1px solid black">
+                {{chat}}
             </div>
         </div>
         <div v-else>Loading</div>
@@ -66,15 +107,19 @@ const Home = {
     `,
     data(){return{
         users:[],
+        chats: [],
         errors:[],
     }},
     computed:{
-        user(){return this.$store.getters.user},
+        currentUser(){return this.$store.getters.user},
         status(){return this.$store.getters.status;},
     },
     created(){
         this.$store.dispatch("getAllUsers").then(response => {
             this.users = response.data;
+            this.$store.dispatch("getCurrentChats").then(response => {
+                this.chats = response.data;
+            })
         })
     }
 }
@@ -94,7 +139,8 @@ const app = createApp({
     }
 })
 const routes = [
-    { path: '/', component: Home },
+    { path: '/', name:"ChatPage", component: ChatPage },
+    { path: '/contacts', name:"ContactPage", component: ContactPage },
   ]
 const router = createRouter({
     routes,

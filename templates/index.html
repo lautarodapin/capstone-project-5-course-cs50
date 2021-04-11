@@ -4,7 +4,8 @@
 {% block content %}
    <div id="app">
         <header>
-                <router-link to="/">Home</router-link>
+                <router-link to="/">Chats</router-link>
+                <router-link :to="{name: 'ContactPage'}">Contacts</router-link>
         </header>
         <main>
             <router-view></router-view>

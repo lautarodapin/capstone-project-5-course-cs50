@@ -4,8 +4,9 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import IntegrityError
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from django.contrib.auth import authenticate, login, logout
 from .models import (User, Chat, Message)
 from .serializers import (UserSerializer, ChatSerializer, MessageSerializer)
@@ -13,14 +14,31 @@ import json
 class UserViewset(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["GET"])
+    def current_chats(self, request):
+        user = request.user
+        chats = user.chats.all()
+        serializer = ChatSerializer(instance=chats, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["GET"])
+    def contacts(self, request):
+        user : User = request.user
+        users = self.get_queryset().exclude(username=user.username)
+        serializer = UserSerializer(instance=users, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 class ChatViewset(ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
+    permission_classes = [IsAuthenticated]
 
 class MessageViewset(ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
 
 class CurrentUserView(APIView):
     # authentication_classes = [IsAuthenticated]
