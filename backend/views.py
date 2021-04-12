@@ -43,13 +43,11 @@ class ChatViewset(ModelViewSet):
     @action(detail=False, methods=["post"])
     def create_chat_with(self, request):
         queryset = self.get_queryset()
-        user : User = request.user
         members: List[int] = request.data.get("members")
         queryset = queryset.filter(members=members[0]) & queryset.filter(members=members[1])
-
         if queryset.exists(): # If the chat already exist return that.
             serializer : ChatSerializer = ChatSerializer(instance=queryset.first(), many=False)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         serializer : ChatSerializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -57,7 +55,7 @@ class ChatViewset(ModelViewSet):
         for member in members:
             chat.members.add(member)
         chat.save()
-        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class MessageViewset(ModelViewSet):
