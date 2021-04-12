@@ -16,6 +16,84 @@ function readCookie(name) {
     return null;
 }
 
+
+const store = createStore({
+    state() {
+        return {
+            currentUser: null,
+            status: "done"
+        }
+    },
+    getters: {
+        user: (state) => state.currentUser,
+        status: (state) => state.status,
+        isAuth: (state) => state.currentUser ? true : false,
+    },
+    mutations: {
+        login(state, user) {
+            state.currentUser = user;
+        },
+        logout(state) {
+            state.currentUser = null;
+        },
+        status(state, value) {
+            state.status = value;
+        }
+    },
+    actions: {
+        login({ commit }) {
+            commit("status", "loading")
+            return new Promise((resolve, reject) => {
+                axios.get("/api/current-user/")
+                    .then(response => {
+                        commit("login", response.data);
+                        commit("status", "done")
+                        resolve(response.data)
+                    })
+                    .catch(error => {
+                        reject(error.response)
+                    })
+            })
+        },
+        getAllUsers({ commit }) {
+            return new Promise((resolve, reject) => {
+                axios.get("/api/users/")
+                    .then(response => {
+                        console.log("getAllUsers", response)
+                        resolve(response)
+                    })
+                    .catch(error => {
+                        reject(error.response)
+                    })
+            })
+        },
+        getCurrentChats({ commit }) {
+            return new Promise((resolve, reject) => {
+                axios.get("/api/users/current_chats/")
+                    .then(response => {
+                        console.log("getCurrentChats", response)
+                        resolve(response)
+                    })
+                    .catch(error => {
+                        reject(error.response)
+                    })
+            })
+        },
+        getUserContacts({ commit }) {
+            return new Promise((resolve, reject) => {
+                axios.get("/api/users/contacts/")
+                    .then(response => {
+                        console.log("getUserContacts", response)
+                        resolve(response)
+                    })
+                    .catch(error => reject(error.response))
+            })
+        },
+    }
+})
+
+
+
 const MessageForm = {
     template: `
     <div class="type_msg">
@@ -168,81 +246,6 @@ const Test = {
     `,
 }
 
-const store = createStore({
-    state() {
-        return {
-            currentUser: null,
-            status: "done"
-        }
-    },
-    getters: {
-        user: (state) => state.currentUser,
-        status: (state) => state.status,
-        isAuth: (state) => state.currentUser ? true : false,
-    },
-    mutations: {
-        login(state, user) {
-            state.currentUser = user;
-        },
-        logout(state) {
-            state.currentUser = null;
-        },
-        status(state, value) {
-            state.status = value;
-        }
-    },
-    actions: {
-        login({ commit }) {
-            commit("status", "loading")
-            return new Promise((resolve, reject) => {
-                axios.get("/api/current-user/")
-                    .then(response => {
-                        commit("login", response.data);
-                        commit("status", "done")
-                        resolve(response.data)
-                    })
-                    .catch(error => {
-                        reject(error.response)
-                    })
-            })
-        },
-        getAllUsers({ commit }) {
-            return new Promise((resolve, reject) => {
-                axios.get("/api/users/")
-                    .then(response => {
-                        console.log("getAllUsers", response)
-                        resolve(response)
-                    })
-                    .catch(error => {
-                        reject(error.response)
-                    })
-            })
-        },
-        getCurrentChats({ commit }) {
-            return new Promise((resolve, reject) => {
-                axios.get("/api/users/current_chats/")
-                    .then(response => {
-                        console.log("getCurrentChats", response)
-                        resolve(response)
-                    })
-                    .catch(error => {
-                        reject(error.response)
-                    })
-            })
-        },
-        getUserContacts({ commit }) {
-            return new Promise((resolve, reject) => {
-                axios.get("/api/users/contacts/")
-                    .then(response => {
-                        console.log("getUserContacts", response)
-                        resolve(response)
-                    })
-                    .catch(error => reject(error.response))
-            })
-        },
-    }
-})
-
 const ContactPage = {
     template: `
     <div>
@@ -327,9 +330,8 @@ const ListChatPage = {
 const ChatPage = {
     template: `
         <div>
-            <div v-if="ws.readyState != 1" class="alert">
+            <div v-if="ws.readyState === ws.CLOSED" class="alert">
                 WEB SOCKET NO CONECTADO 
-                <--- TODO --->
             </div>
                 <ChatPaper :messages="messages" @createMessage="createMessage"/>
           

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import IntegrityError
 from rest_framework import serializers, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django.contrib.auth import authenticate, login, logout
 from .models import (User, Chat, Message)
@@ -18,7 +18,7 @@ import json
 class UserViewset(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # TODO should only be for creating
 
     @action(detail=False, methods=["GET"])
     def current_chats(self, request):
