@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient, RequestsClient
 from rest_framework import status
-from .serializers import *
+from backend.serializers import *
 class BasicTest(TestCase):
 
     def setUp(self) -> None:

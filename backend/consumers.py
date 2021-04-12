@@ -43,8 +43,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def create_message(self, message: str, user_id: int) -> ReturnDict:
-        user: User = User.objects.get(pk=user_id)
-        chat: Chat = Chat.objects.get(pk=self.room_name)
-        message : Message = Message.objects.create(user=user, chat=chat, text=message)
+        user: User = User.objects.using("default").get(pk=user_id)
+        chat: Chat = Chat.objects.using("default").get(pk=self.room_name)
+        message : Message = Message.objects.using("default").create(user=user, chat=chat, text=message)
         serializer = MessageSerializer(instance=message, many=False)
         return serializer.data
