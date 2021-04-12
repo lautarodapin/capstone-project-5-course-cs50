@@ -342,7 +342,6 @@ const ChatPage = {
             members: [],
             chat: [],
             ws: null,
-            scroll: false,
         }
     },
     computed: {
@@ -350,6 +349,10 @@ const ChatPage = {
         currentUser() { return this.$store.getters.user; },
     },
     methods: {
+        scrollBottom(){
+            var el = document.getElementById("scrollBottom")
+            if (el) el.scrollIntoView({behavior: 'smooth'});
+        },
         createMessage(message) {
             console.log(message)
             const data = {
@@ -358,12 +361,9 @@ const ChatPage = {
                 message: message,
             }
             this.ws.send(JSON.stringify(data))
-            this.scroll = true;
-            this.scroll = false;
         },
         createWebsocket() {
             self = this;
-
             this.ws = new WebSocket(`${ws_schema}//${host}/ws/chat/${this.id}/`)
             this.ws.onmessage = function (response) {
                 const data = JSON.parse(response.data)
@@ -371,6 +371,7 @@ const ChatPage = {
                 switch (data.type) {
                     case "chat_message":
                         self.messages.push(data.data)
+                        self.scrollBottom();
                         break;
 
                     default:
@@ -424,6 +425,9 @@ const ChatPage = {
             })
         this.createWebsocket();
     },
+    mounted(){
+        // this.scrollBottom();
+    }
 }
 
 const app = createApp({
