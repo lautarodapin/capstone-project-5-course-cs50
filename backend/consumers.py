@@ -40,20 +40,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             text_data_json,
         )
+    async def notification(self, event):
+        event["status"] = status.HTTP_200_OK
+        await self.send(text_data=json.dumps(event))
 
     async def chat_message(self, event):
         event["data"] = await self.create_message(message=event["message"], user_id=event["user"])
         event["status"] = status.HTTP_201_CREATED
         await self.send(text_data=json.dumps(event))
 
+
     @database_sync_to_async
     def create_message(self, message: str, user_id: int) -> ReturnDict:
-        from django.db import connection
-        print(connection.vendor)
-        print("CREATE_MESSAGE", list(User.objects.using("default").all()))
-        print("CREATE_MESSAGE", list(Chat.objects.using("default").all()))
-        user: User = User.objects.using("default").get(pk=user_id)
-        chat: Chat = Chat.objects.using("default").get(pk=self.room_name)
-        message : Message = Message.objects.using("default").create(user=user, chat=chat, text=message)
+        user: User = User.objects.get(pk=user_id)
+        chat: Chat = Chat.objects.get(pk=self.room_name)
+        message : Message = Message.objects.create(user=user, chat=chat, text=message)
         serializer = MessageSerializer(instance=message, many=False)
         return serializer.data

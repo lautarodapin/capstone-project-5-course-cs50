@@ -23,5 +23,7 @@ def send_notification_after_creating_message(sender, instance: Message, created:
             {
                 "type": "notification",
                 "message": instance.text,
+                "from": instance.user.pk,
+                "chat": instance.chat.pk,
             },
         )
