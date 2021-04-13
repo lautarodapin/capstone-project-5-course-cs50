@@ -1,4 +1,5 @@
 from typing import OrderedDict
+import pytest
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.checks import messages
@@ -9,7 +10,7 @@ from .serializers import MessageSerializer
 
 import json
 
-
+@pytest.mark.django_db(transaction=True)
 class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
@@ -43,6 +44,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def create_message(self, message: str, user_id: int) -> ReturnDict:
+        from django.db import connection
+        print(connection.vendor)
+        print("CREATE_MESSAGE", list(User.objects.using("default").all()))
+        print("CREATE_MESSAGE", list(Chat.objects.using("default").all()))
         user: User = User.objects.using("default").get(pk=user_id)
         chat: Chat = Chat.objects.using("default").get(pk=self.room_name)
         message : Message = Message.objects.using("default").create(user=user, chat=chat, text=message)

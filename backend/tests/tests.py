@@ -3,7 +3,7 @@ from rest_framework.test import APIClient, RequestsClient
 from rest_framework import status
 from backend.serializers import *
 class BasicTest(TestCase):
-
+    # databases = ["te"]
     def setUp(self) -> None:
         self.client = APIClient()
         self.user1: User = User.objects.create_user(username="test1", password="testpassword123")

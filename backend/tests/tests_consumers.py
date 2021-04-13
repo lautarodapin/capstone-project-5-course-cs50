@@ -1,3 +1,4 @@
+import unittest
 from django.test import TestCase
 from rest_framework import status
 from channels.testing import HttpCommunicator
@@ -14,14 +15,19 @@ application = URLRouter([
 ])
 
 class MyTests(TestCase):
+    databases = {"default", "test"}
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user1 : User = User.objects.create_user(username="test1", password="testpassword123")
+        cls.user2 : User = User.objects.create_user(username="test2", password="testpassword123")
+        cls.chat : Chat = Chat.objects.create()
+        cls.chat.members.add(cls.user1.pk)
+        cls.chat.members.add(cls.user2.pk)
+        cls.chat.save()
+        return super().setUpTestData()
 
     def setUp(self) -> None:
-        self.user1 : User = User.objects.create_user(username="test1", password="testpassword123")
-        self.user2 : User = User.objects.create_user(username="test2", password="testpassword123")
-        self.chat : Chat = Chat.objects.create()
-        self.chat.members.add(self.user1.pk)
-        self.chat.members.add(self.user2.pk)
-        self.chat.save()
         return super().setUp()
 
     async def test_my_consumer(self):
@@ -36,3 +42,4 @@ class MyTests(TestCase):
         })
         response = await communicator.receive_from()
         self.assertEqual(response["status"], 200)
+
