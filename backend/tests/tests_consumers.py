@@ -1,6 +1,7 @@
 from typing import Tuple
 import unittest
 import pytest
+import backend.signals
 from channels.db import database_sync_to_async
 from django.test import TestCase
 from rest_framework import status
@@ -43,13 +44,29 @@ async def test_decorator(basic_users: Tuple[User, User, Chat]):
     assert response["status"] == status.HTTP_201_CREATED
     assert response["data"]["user"]["id"] == user1.pk
 
+    response = await communicator.receive_json_from()
+    assert response["type"] == "notification"
+    assert response["status"] == status.HTTP_200_OK
+    assert response["message"] == "test message"
+    assert response["from"] == user1.pk
+    assert response["chat"] == chat.pk
+
     await communicator.send_json_to({
         "type":"chat_message",
-        "message":"test message",
+        "message":"test message 2",
         "user":user2.pk,
     })
     response = await communicator.receive_json_from()
+    assert response["type"] == "chat_message"
     assert response["status"] == status.HTTP_201_CREATED
     assert response["data"]["user"]["id"] == user2.pk
-    communicator.disconnect()
+
+    response = await communicator.receive_json_from()
+    assert response["type"] == "notification"
+    assert response["status"] == status.HTTP_200_OK
+    assert response["message"] == "test message 2"
+    assert response["from"] == user2.pk
+    assert response["chat"] == chat.pk
+
+    await communicator.disconnect()
 

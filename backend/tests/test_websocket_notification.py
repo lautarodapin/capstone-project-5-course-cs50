@@ -51,3 +51,4 @@ async def test_notification_sent_after_creating_message(basic_users: Tuple[User,
     assert response["from"] == user1.pk
     assert response["chat"] == chat.pk
     
+    await communicator.disconnect()

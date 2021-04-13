@@ -1,6 +1,6 @@
 from typing import OrderedDict
 import pytest
-from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer, AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.checks import messages
 from rest_framework.utils.serializer_helpers import ReturnDict
@@ -11,7 +11,7 @@ from channels.exceptions import RequestAborted
 import json
 
 @pytest.mark.django_db(transaction=True)
-class ChatConsumer(AsyncWebsocketConsumer):
+class ChatConsumer(AsyncJsonWebsocketConsumer):
 
 
     async def connect(self):
@@ -28,26 +28,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-        return super().disconnect(code)
+        return await super().disconnect(code)
 
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        type_ = text_data_json.get("type")
+    async def receive_json(self, content):
+        type_ = content.get("type")
         if type_ not in ["chat_message"]:
             return 
-        message = text_data_json.get("message")
+        message = content.get("message")
         await self.channel_layer.group_send(
             self.room_group_name,
-            text_data_json,
+            content,
         )
     async def notification(self, event):
         event["status"] = status.HTTP_200_OK
-        await self.send(text_data=json.dumps(event))
+        await self.send_json(event)
 
     async def chat_message(self, event):
+        print(event)
         event["data"] = await self.create_message(message=event["message"], user_id=event["user"])
         event["status"] = status.HTTP_201_CREATED
-        await self.send(text_data=json.dumps(event))
+        await self.send_json(event)
 
 
     @database_sync_to_async
