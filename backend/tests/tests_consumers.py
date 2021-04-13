@@ -31,7 +31,7 @@ def basic_users()->Tuple[User, User, Chat]:
 @pytest.mark.asyncio
 async def test_decorator(basic_users: Tuple[User, User, Chat]):
     user1, user2, chat = basic_users
-    communicator = WebsocketCommunicator(application, "/testws/1/")
+    communicator = WebsocketCommunicator(application, "/testws/1/")  # /1/ means the PK=1 chat from the url
     connected, subprotocol = await communicator.connect()
     assert connected
     await communicator.send_json_to({
