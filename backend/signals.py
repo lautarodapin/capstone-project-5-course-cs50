@@ -8,3 +8,4 @@ from .models import (User)
 def create_token_after_save(sender, instance: User, created, **kwargs):
     if created:
         Token.objects.create(user=instance)
+
