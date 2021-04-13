@@ -14,32 +14,23 @@ application = URLRouter([
     re_path(r"^testws/(?P<chat_id>\w+)/$", ChatConsumer.as_asgi()),
 ])
 
-class MyTests(TestCase):
-    databases = {"default", "test"}
 
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls.user1 : User = User.objects.create_user(username="test1", password="testpassword123")
-        cls.user2 : User = User.objects.create_user(username="test2", password="testpassword123")
-        cls.chat : Chat = Chat.objects.create()
-        cls.chat.members.add(cls.user1.pk)
-        cls.chat.members.add(cls.user2.pk)
-        cls.chat.save()
-        return super().setUpTestData()
-
-    def setUp(self) -> None:
-        return super().setUp()
-
-    async def test_my_consumer(self):
-        communicator = WebsocketCommunicator(application, "/testws/1/")
-        connected, subprotocol = await communicator.connect()
-        self.assertTrue(connected)
-        #  TODO no usa la base de datos test el consumer
-        await communicator.send_json_to({
-            "type":"chat_message",
-            "message":"test message",
-            "user":self.user1.pk,
-        })
-        response = await communicator.receive_from()
-        self.assertEqual(response["status"], 200)
-
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_decorator():
+    user1 : User = User.objects.create_user(username="test1", password="testpassword123")
+    user2 : User = User.objects.create_user(username="test2", password="testpassword123")
+    chat : Chat = Chat.objects.create()
+    chat.members.add(user1.pk)
+    chat.members.add(user2.pk)
+    chat.save()
+    communicator = WebsocketCommunicator(application, "/testws/1/")
+    connected, subprotocol = await communicator.connect()
+    assert connected
+    await communicator.send_json_to({
+        "type":"chat_message",
+        "message":"test message",
+        "user":user1.pk,
+    })
+    response = await communicator.receive_from()
+    assert response["status"] == 200
