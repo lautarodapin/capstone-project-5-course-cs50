@@ -145,7 +145,7 @@ const MessageOutgoing = {
 const ChatPaper = {
     template: `
     <div class="container-sm">
-        <div class="row overflow-auto" style="height: 85vh">
+        <div class="row overflow-auto" style="height: 80vh;">
             <div 
                 v-for="message in messages"
                 :class="message.user.id == currentUser.id? 
@@ -249,9 +249,9 @@ const Test = {
 
 const ContactPage = {
     template: `
-    <div>
-        <h3>Contacts page</h3>
-        <div v-for="user in users" :key="user.id" style="border: 1px solid black">
+    <div class="container-sm">
+        <h3 class="display-6">Contacts page</h3>
+        <div v-for="user in users" :key="user.id" class="card>
         {{user.username}}
         <button @click="createChat(user)">Chat with him</button>
         </div>
@@ -292,11 +292,15 @@ const ContactPage = {
 const ListChatPage = {
     template: `
     <div>
-        <div v-if="status === 'done'">
-            <h3>Chats Page</h3>
-            <div v-for="chat in chats" :key="chat.id" style="border: 1px solid black">
-                {{chat.id}}
-                <button @click="openChat(chat)">Ingresar</button>
+        <div v-if="status === 'done'" class="container-sm">
+            <h3 class="display-6">Chats Page</h3>
+            <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
+                <div class="card-body">
+                    {{otherMember(chat).username}}
+                    <small class="text-muted">
+                        {{getLastChatMessage(chat).text}}
+                    </small>
+                </div>
             </div>
         </div>
         <div v-else>Loading</div>
@@ -313,6 +317,13 @@ const ListChatPage = {
         openChat(chat) {
             this.$router.push({ name: "ChatPage", params: { id: chat.id } })
         },
+        otherMember(chat){
+            var other = chat.members.filter(member => member.id != this.currentUser.id);
+            return other[0]
+        },
+        getLastChatMessage(chat){
+            return chat.messages[chat.messages.length - 1]
+        }
     },
     computed: {
         currentUser() { return this.$store.getters.user },
