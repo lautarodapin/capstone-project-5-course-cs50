@@ -28,6 +28,7 @@ def basic_users()->Tuple[User, User, Chat]:
     chat.save()
     return user1, user2, chat
 
+@pytest.mark.skip
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_decorator(basic_users: Tuple[User, User, Chat]):
