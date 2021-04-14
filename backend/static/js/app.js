@@ -96,12 +96,14 @@ const store = createStore({
 
 const MessageForm = {
     template: `
-    <div class="type_msg">
-        <form @submit.prevent="submitForm" class="input_msg_write">
-            <input v-model="message" type="text" class="write_msg" placeholder="Type a message" />
-            <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
-        </form>
-    </div>
+    <form @submit.prevent="submitForm" class="row mt-2">
+        <div class="col">
+            <input v-model="message" type="text" class="form-control" placeholder="Type a message . . . " />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-info float-end rounded-pill border-1" type="submit">Send</button>
+        </div>
+    </form>
     `,
     emits: ["submitForm"],
     data() {
@@ -122,20 +124,18 @@ const MessageIncoming = {
     // <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
     // </div>
     template: `
-    <div class="alert alert-dark pr-5">
-        <div class="">
-            <p>{{message.text}}</p>
-            <span class="time_date">{{message.created_at}}</span>
-        </div>
+    <div class="alert alert-dark me-5 p-0">
+        <p class="ps-2 pt-1 pb-1 mb-0">{{message.text}}</p>
+        <small class="text-muted p-0 ps-2 m-0">{{message.created_at}}</small>
     </div>
     `,
     props:["message"],
 }
 const MessageOutgoing = {
     template: `
-    <div class="alert alert-info ml-5">
-        <p>{{message.text}}</p>
-        <span class="time_date">{{message.created_at}}</span>
+    <div class="alert alert-info ms-5 p-0">
+        <p class="pe-2 pt-1 pb-1 mb-0">{{message.text}}</p>
+        <small class="text-muted p-0 pe-2 m-0">{{message.created_at}}</small>
     </div>
     `,
     props:["message"],
@@ -145,19 +145,19 @@ const MessageOutgoing = {
 const ChatPaper = {
     template: `
     <div class="container-sm">
-        <div class="row">
+        <div class="row overflow-auto" style="height: 85vh">
             <div 
                 v-for="message in messages"
                 :class="message.user.id == currentUser.id? 
-                    'col-12 text-end    me-5 pe-5' : 
-                    'col-12 text-start  ms-5 ps-5'"
+                    'col-12 text-end     pe-5' : 
+                    'col-12 text-start   ps-5'"
             >
                 <MessageOutgoing class="" v-if="message.user.id == currentUser.id" :message="message" />
                 <MessageIncoming class="" v-else :message="message" />
             </div>
-            <span id="scrollBottom"></span>
+            <div id="scrollBottom"></div>
         </div>
-        <MessageForm @submitForm="createMessage"/>
+        <MessageForm @submitForm="createMessage" style="height: 10vh"/>
     </div>
     `,
     components: {MessageIncoming, MessageOutgoing, MessageForm,},
@@ -176,8 +176,8 @@ const ChatPaper = {
             this.scrollBottom()
         },
     },
-    mounted(){
-        this.scrollBottom();
+    updated(){
+        this.$nextTick(() => this.scrollBottom()) ;
     }
 
 }
@@ -431,7 +431,7 @@ const ChatPage = {
         this.createWebsocket();
     },
     mounted(){
-        // this.scrollBottom();
+        this.scrollBottom();
     }
 }
 
