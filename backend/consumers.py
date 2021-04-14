@@ -1,4 +1,4 @@
-from typing import OrderedDict
+from typing import Dict, OrderedDict, Union
 import pytest
 from channels.generic.websocket import AsyncJsonWebsocketConsumer, AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -16,7 +16,13 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["chat_id"]
+        self.chat_id = self.scope["url_route"]["kwargs"]["chat_id"]
         self.room_group_name = f"chat_{self.room_name}"
+        notification = self.create_notification(message=f"User {self.scope['user'].username} join in the chat")
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            notification
+        )
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -39,7 +45,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             self.room_group_name,
             content,
         )
+
+    def create_notification(self, message: str) -> Dict[str, Union[str, int]]:
+        return {
+            "type": "notification",
+            "message": message,
+            "chat": self.chat_id,
+            "from": self.scope["user"].pk,
+        }
+
     async def notification(self, event):
+        if self.scope["user"].pk == event["from"]:  # Prevents from notifiying itself.
+            return
         event["status"] = status.HTTP_200_OK
         await self.send_json(event)
 

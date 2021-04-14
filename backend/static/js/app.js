@@ -376,7 +376,9 @@ const ChatPage = {
                         self.messages.push(data.data)
                         self.scrollBottom();
                         break;
-
+                    case "notification":
+                        console.log("notification", data)
+                        break;
                     default:
                         break;
                 }
