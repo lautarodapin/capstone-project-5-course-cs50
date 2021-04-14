@@ -119,15 +119,13 @@ const MessageForm = {
 
 
 const MessageIncoming = {
+    // <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
+    // </div>
     template: `
-    <div class="incoming_msg">
-        <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
-        </div>
-        <div class="received_msg">
-            <div class="received_withd_msg">
-                <p>{{message.text}}</p>
-                <span class="time_date">{{message.created_at}}</span>
-            </div>
+    <div class="alert alert-dark pr-5">
+        <div class="">
+            <p>{{message.text}}</p>
+            <span class="time_date">{{message.created_at}}</span>
         </div>
     </div>
     `,
@@ -135,11 +133,9 @@ const MessageIncoming = {
 }
 const MessageOutgoing = {
     template: `
-    <div class="outgoing_msg">
-        <div class="sent_msg">
-            <p>{{message.text}}</p>
-            <span class="time_date">{{message.created_at}}</span>
-        </div>
+    <div class="alert alert-info ml-5">
+        <p>{{message.text}}</p>
+        <span class="time_date">{{message.created_at}}</span>
     </div>
     `,
     props:["message"],
@@ -148,12 +144,17 @@ const MessageOutgoing = {
 
 const ChatPaper = {
     template: `
-    <div class="mesgs">
-        <div class="msg_history">
-            <span v-for="message in messages">
-            <MessageOutgoing v-if="message.user.id == currentUser.id" :message="message" />
-            <MessageIncoming v-else :message="message" />
-            </span>
+    <div class="container-sm">
+        <div class="row">
+            <div 
+                v-for="message in messages"
+                :class="message.user.id == currentUser.id? 
+                    'col-12 text-end    me-5 pe-5' : 
+                    'col-12 text-start  ms-5 ps-5'"
+            >
+                <MessageOutgoing class="" v-if="message.user.id == currentUser.id" :message="message" />
+                <MessageIncoming class="" v-else :message="message" />
+            </div>
             <span id="scrollBottom"></span>
         </div>
         <MessageForm @submitForm="createMessage"/>
