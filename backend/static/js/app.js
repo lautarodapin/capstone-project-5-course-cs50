@@ -144,20 +144,27 @@ const MessageOutgoing = {
 
 const ChatPaper = {
     template: `
-    <div class="container-sm">
-        <div class="row overflow-auto" style="height: 80vh;">
-            <div 
-                v-for="message in messages"
-                :class="message.user.id == currentUser.id? 
-                    'col-12 text-end     pe-5' : 
-                    'col-12 text-start   ps-5'"
-            >
-                <MessageOutgoing class="" v-if="message.user.id == currentUser.id" :message="message" />
-                <MessageIncoming class="" v-else :message="message" />
+    <div>
+        <div v-if="status == 'done'" class="container-sm">
+            <div class="row overflow-auto" style="height: 80vh;">
+                <div 
+                    v-for="message in messages"
+                    :class="message.user.id == currentUser.id? 
+                        'col-12 text-end     pe-5' : 
+                        'col-12 text-start   ps-5'"
+                >
+                    <MessageOutgoing class="" v-if="message.user.id == currentUser.id" :message="message" />
+                    <MessageIncoming class="" v-else :message="message" />
+                </div>
+                <div id="scrollBottom"></div>
             </div>
-            <div id="scrollBottom"></div>
+            <MessageForm @submitForm="createMessage" style="height: 10vh"/>
         </div>
-        <MessageForm @submitForm="createMessage" style="height: 10vh"/>
+        <div v-else class="container-sm text-center">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
     </div>
     `,
     components: {MessageIncoming, MessageOutgoing, MessageForm,},
@@ -165,6 +172,7 @@ const ChatPaper = {
     emits:["createMessage"],
     computed:{
         currentUser(){return this.$store.getters.user;},
+        status() { return this.$store.getters.status; },
     },
     methods:{
         scrollBottom(){
@@ -249,11 +257,26 @@ const Test = {
 
 const ContactPage = {
     template: `
-    <div class="container-sm">
-        <h3 class="display-6">Contacts page</h3>
-        <div v-for="user in users" :key="user.id" class="card>
-        {{user.username}}
-        <button @click="createChat(user)">Chat with him</button>
+    <div>
+        <div v-if="status === 'done'" class="container-sm">
+            <h3 class="display-6">Contacts page</h3>
+            <div 
+                v-for="user in users" :key="user.id" 
+                @click="createChat(user)" 
+                class="card mb-2"
+            >
+                <div class="card-body">
+                    {{user.username}}
+                    <small class="text-muted">
+                        {{user.last_login}}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div v-else class="container-sm text-center">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
         </div>
     </div>
     `,
@@ -280,6 +303,7 @@ const ContactPage = {
     },
     computed: {
         currentUser() { return this.$store.getters.user; },
+        status() { return this.$store.getters.status; },
     },
     created() {
         this.$store.dispatch("getUserContacts")
@@ -291,8 +315,7 @@ const ContactPage = {
 
 const ListChatPage = {
     template: `
-    <div>
-        <div v-if="status === 'done'" class="container-sm">
+        <div class="container-sm">
             <h3 class="display-6">Chats Page</h3>
             <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
                 <div class="card-body">
@@ -303,8 +326,6 @@ const ListChatPage = {
                 </div>
             </div>
         </div>
-        <div v-else>Loading</div>
-    </div>
     `,
     data() {
         return {
@@ -342,11 +363,14 @@ const ListChatPage = {
 const ChatPage = {
     template: `
         <div>
-            <div v-if="ws.readyState === ws.CLOSED" class="alert">
-                WEB SOCKET NO CONECTADO 
-            </div>
+            <div v-if="status === 'done'" class="alert">
                 <ChatPaper :messages="messages" @createMessage="createMessage"/>
-          
+            </div>
+            <div v-else class="container-sm text-center">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
         </div>
     `,
     components: { MessageForm, ChatPaper },
@@ -361,6 +385,7 @@ const ChatPage = {
     computed: {
         id() { return this.$route.params.id; },
         currentUser() { return this.$store.getters.user; },
+        status() { return this.$store.getters.status; },
     },
     methods: {
         scrollBottom(){
@@ -429,12 +454,15 @@ const ChatPage = {
         },
     },
     created() {
+        this.$store.commit("status", "loading")
         Promise.all([this.getChat(), this.getMessages()])
             .then(([chat_response, message_response]) => {
                 console.log("values", chat_response, message_response)
                 this.chat = chat_response.data;
                 this.messages = message_response.data.results;
                 this.members = chat_response.data.members;
+                this.$store.commit("status", "done")
+
             })
             .catch(([chat_error, message_error]) => {
                 console.log(error)
