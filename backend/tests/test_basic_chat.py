@@ -41,13 +41,40 @@ async def test_decorator(basic_users: Tuple[User, User, Chat]):
     connected, subprotocol = await comm_user_2.connect()
     assert connected
 
-    # After the user 2 joins in, user 1 should receive a notification
+    # After the user 2 joins in, it sends a joined_chat that the user_1 should receive
+    await comm_user_2.send_json_to({
+        "type": "joined_chat",
+        "user": user_2.pk,
+    })
     response = await comm_user_1.receive_json_from()
     assert response
     assert response["from"] == user_2.pk
-    assert response["chat"] == str(chat.pk)
+    assert response["chat"] == chat.pk
     assert response["message"] == f"User {user_2.username} join in the chat"
     
+    # User 1 sends a message
+    await comm_user_1.send_json_to({
+        "type": "chat_message",
+        "user": user_1.pk,
+        "message": "user 1 sends a message",
+    })
+
+    # user 1 should receive the message
+    # user 2 should receive a notification and then the message
+    user_1_response = await comm_user_1.receive_json_from()
+    user_2_response = await comm_user_2.receive_json_from()
+    user_2_response_2 = await comm_user_2.receive_json_from()
+    assert user_1_response["status"] == status.HTTP_201_CREATED
+    assert user_1_response["user"] == user_1.pk
+    
+    assert  user_2_response["status"] == status.HTTP_200_OK
+    assert  user_2_response["from"] == user_1.pk
+    assert  user_2_response["chat"] == chat.pk
+    assert  user_2_response["message"] == "user 1 sends a message"
+
+    assert user_2_response_2["status"] == status.HTTP_201_CREATED
+    assert user_2_response_2["user"] == user_1.pk
+
 
     await comm_user_1.disconnect()
     await comm_user_2.disconnect()
