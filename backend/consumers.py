@@ -47,12 +47,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def joined_chat(self, event):
         # Joined chat notification.
-        user : User = await self.get_user(event["user"])
-        notification = self.create_notification(message=f"User {user.username} join in the chat")
-        print(f"Joined chat {notification}")
+        print("Joined_chat", event)
+        user_from : User = await self.get_user(event["from"])
+        event = {
+            "type": "notification",
+            "message": f"User {user_from.username} join in the chat",
+            "chat": event["chat"],
+            "from": event["from"],
+            "status": status.HTTP_200_OK
+        }
         await self.channel_layer.group_send(
             self.room_group_name,
-            notification
+            event
         )
 
     def create_notification(self, message: str) -> Dict[str, Union[str, int]]:
@@ -67,12 +73,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         print("notification", event)
         if self.scope["user"].pk == event["from"]:  # Prevents from notifiying itself.
             return
-        event["status"] = status.HTTP_200_OK
+        print("notification sending", event, self.scope["user"].username)
         await self.send_json(event)
 
     async def chat_message(self, event):
         print("chat_message", event)
-        event["data"] = await self.create_message(message=event["message"], user_id=event["user"])
+        event["data"] = await self.create_message(message=event["message"], user_id=event["from"])
         event["status"] = status.HTTP_201_CREATED
         await self.send_json(event)
 
