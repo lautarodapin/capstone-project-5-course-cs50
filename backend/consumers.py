@@ -27,6 +27,29 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
 
+    @action()
+    async def join_chat(self, chat: int, **kwargs):
+        self.chat_room_name = f"chat_{chat}"
+        await self.channel_layer.group_add(
+            self.chat_room_name,
+            self.channel_name,
+        )
+        await self.channel_layer.group_send(
+            self.chat_room_name,
+            {
+                "type": "notification",
+                "message": f"{self.scope['user'].username} joined the chat"
+            }
+        )
+
+    async def notification(self, event):
+        content = dict(
+            action="notification",
+            message=event["message"],
+            status=status.HTTP_200_OK
+        )
+        await self.send_json(content)
+
     @model_observer(Message)
     async def message_create_handler(self, message, observer=None, action=None, **kwargs):
         # due to not being able to make DB QUERIES when selecting a group

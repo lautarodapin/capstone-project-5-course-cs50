@@ -66,9 +66,23 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     message: Message = await database_sync_to_async(Message.objects.create)\
         (user=user_2, chat=chat_2, text="user 2 sends a message")
 
-    with pytest.raises(TimeoutError) as e_info:
-        response = await communicator.receive_json_from()
+    # try:
+    #     await communicator.receive_json_from()
+    #     assert False
+    # except TimeoutError:
+    #     assert True
 
-
+    # with pytest.raises(TimeoutError) as e_info:
+    #     await communicator.receive_json_from()
+    # assert str(e_info.value) == ""
+    # Test join chat.
+    await communicator.send_json_to({
+        "action": "join_chat",
+        "chat": chat.pk,
+        "request_id": now().timestamp(),
+    })
+    response = await communicator.receive_json_from()
+    assert response["status"] == status.HTTP_200_OK
+    assert response["message"] == f"{user_1.username} joined the chat"
 
     await communicator.disconnect()
