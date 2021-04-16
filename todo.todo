@@ -1,7 +1,7 @@
 Features:
     ☐ Notificaciones
     ☐ Chat grupal
-    ☐ Mejora visual
+    ✔ Mejora visual @done(21-04-16 08:54)
 
 Notificaciones:
     ☐ Notificacion en chat de mensaje nuevo
@@ -12,6 +12,10 @@ Chat grupal:
     ☐ Añadir usuarios
 
 Mejora visual:
-    ☐ Chat
-    ☐ Lista de chats
-    ☐ Lista de usuarios
+    ✔ Chat @done(21-04-16 08:54)
+    ✔ Lista de usuarios @done(21-04-16 08:54)
+    ✔ Lista de chats @done(21-04-16 08:54)
+
+Bugs:
+    ☐ Usuarios que no pertenecen al chat pueden ingresar.
+    ☐ Se duplican o triplican los mensajes segun la cantidad de usuarios.
