@@ -136,6 +136,8 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     @action()
     async def subscribe_to_notifications(self, **kwargs):
         # check user has permission to do this
+        if  "user" not in self.scope or not self.scope["user"].is_authenticated :
+            return {}, status.HTTP_403_FORBIDDEN
         queryset = await database_sync_to_async(self.get_queryset)()
         queryset = await database_sync_to_async(queryset.filter)(members=self.scope["user"].pk)
         chats = await database_sync_to_async(list)(queryset)
@@ -146,6 +148,8 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             print("subscribing to ", chat)
             await self.chats_messages_handler.subscribe(chat=chat.pk)
         return {}, status.HTTP_201_CREATED
+
+
 class DemultiplexerAsyncJson(AsyncJsonWebsocketDemultiplexer):
     applications = {
         "user": UserConsumer.as_asgi(),

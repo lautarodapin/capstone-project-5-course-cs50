@@ -175,3 +175,23 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
     assert response["response_status"] == status.HTTP_201_CREATED
     assert response["data"]["text"] == "test"
     assert response["action"] == "notification"
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_subscribe_to_chat_notification_without_been_login(basic_chats: Tuple[User, Chat, Chat, Chat]):
+    user, chat_1, chat_2, chat_3 = basic_chats
+
+    communicator = AuthWebsocketCommunicator(application, "/test/chat/")
+    connected, subprotocol = await communicator.connect()
+    assert connected
+    
+    await communicator.send_json_to({
+        "action": "subscribe_to_notifications",
+        "request_id": now().timestamp(),
+    })
+
+    response = await communicator.receive_json_from()
+    assert response["response_status"] == status.HTTP_403_FORBIDDEN
+    assert response["action"] == "subscribe_to_notifications"
+    
+    await communicator.disconnect()
