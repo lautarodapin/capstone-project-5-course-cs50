@@ -33,48 +33,74 @@ def basic_users()->Tuple[User, User, Chat]:
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_decorator(basic_users: Tuple[User, User, Chat]):
+    # 1.
     user_1, user_2, chat = basic_users
     comm_user_1 = AuthWebsocketCommunicator(application, "/testws/1/", user=user_1)  # /1/ means the PK=1 chat from the url
     connected, subprotocol = await comm_user_1.connect()
     assert connected
 
+    # 2.
+    await comm_user_1.send_json_to({
+        "type": "joined_chat",
+        "from": user_1.pk,
+        "chat": chat.pk,
+    })
+    
+    # 4.
     comm_user_2 = AuthWebsocketCommunicator(application, "/testws/1/", user=user_2)  # /1/ means the PK=1 chat from the url
     connected, subprotocol = await comm_user_2.connect()
     assert connected
 
-    # After the user 2 joins in, it sends a joined_chat that the user_1 should receive
+    response = await comm_user_2.receive_json_from()
+    assert response["status"] == status.HTTP_200_OK
+    assert response["type"] == "notification"
+    assert response["from"] == user_1.pk
+    assert response["chat"] == chat.pk
+    assert response["message"] == f"User {user_1.username} join in the chat"
+
+    # 5.
     await comm_user_2.send_json_to({
         "type": "joined_chat",
-        "user": user_2.pk,
+        "from": user_2.pk,
+        "chat": chat.pk,
     })
-    response = await comm_user_1.receive_json_from()
-    assert response
-    assert response["from"] == user_2.pk
-    assert response["chat"] == chat.pk
-    assert response["message"] == f"User {user_2.username} join in the chat"
-    
-    # User 1 sends a message
+
+    # 6.
+    response_user_1 = await comm_user_1.receive_json_from()
+    assert response_user_1["status"] == status.HTTP_200_OK
+    assert response_user_1["type"] == "notification"
+    assert response_user_1["from"] == user_2.pk
+    assert response_user_1["chat"] == chat.pk
+
+    # 7.
     await comm_user_1.send_json_to({
         "type": "chat_message",
-        "user": user_1.pk,
+        "from": user_1.pk,
         "message": "user 1 sends a message",
+        "chat": chat.pk,
     })
 
-    # user 1 should receive the message
-    # user 2 should receive a notification and then the message
-    user_1_response = await comm_user_1.receive_json_from()
-    user_2_response = await comm_user_2.receive_json_from()
-    user_2_response_2 = await comm_user_2.receive_json_from()
-    assert user_1_response["status"] == status.HTTP_201_CREATED
-    assert user_1_response["user"] == user_1.pk
-    
-    assert  user_2_response["status"] == status.HTTP_200_OK
-    assert  user_2_response["from"] == user_1.pk
-    assert  user_2_response["chat"] == chat.pk
-    assert  user_2_response["message"] == "user 1 sends a message"
+    # 9.
+    response_user_1 = await comm_user_1.receive_json_from()
+    response_user_2 = await comm_user_2.receive_json_from()
+    assert response_user_1["type"] == "chat_message"
+    assert response_user_1["status"] == status.HTTP_201_CREATED
+    assert response_user_1["message"] == "user 1 sends a message"
+    assert response_user_1["from"] == user_1.pk
+    assert response_user_1["chat"] == chat.pk
 
-    assert user_2_response_2["status"] == status.HTTP_201_CREATED
-    assert user_2_response_2["user"] == user_1.pk
+    assert response_user_2["type"] == "chat_message"
+    assert response_user_2["status"] == status.HTTP_201_CREATED
+    assert response_user_2["message"] == "user 1 sends a message"
+    assert response_user_2["from"] == user_1.pk
+    assert response_user_2["chat"] == chat.pk
+
+    # 8.
+    response_user_2_notification = await comm_user_2.receive_json_from()
+    assert response_user_2_notification["type"] == "notification"
+    assert response_user_2_notification["message"] == "user 1 sends a message"
+    assert response_user_2_notification["from"] == user_1.pk
+    assert response_user_2_notification["chat"] == chat.pk
 
 
     await comm_user_1.disconnect()

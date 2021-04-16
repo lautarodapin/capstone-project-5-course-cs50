@@ -1,6 +1,7 @@
 from django import dispatch
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from rest_framework import status
 from rest_framework.authtoken.models import Token
 from .models import (Message, User)
 
@@ -24,6 +25,7 @@ def send_notification_after_creating_message(sender, instance: Message, created:
                 "type": "notification",
                 "message": instance.text,
                 "from": instance.user.pk,
-                "chat": instance.chat.pk,
+                "chat": chat_id,
+                "status": status.HTTP_200_OK,
             },
         )
