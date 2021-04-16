@@ -103,8 +103,49 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
 
+    @model_observer(Message)
+    async def chats_messages_handler(self, message, observer=None, action=None, **kwargs):
+        # due to not being able to make DB QUERIES when selecting a group
+        # maybe do an extra check here to be sure the user has permission
+        # send activity to your frontend
+        action = "notification"
+        print("chats_message_handler", message)
+        await self.send_json(dict(
+            data=message, 
+            action=action, 
+            response_status=status.HTTP_201_CREATED,
+        ))
 
+    @chats_messages_handler.serializer
+    def chats_messages_handler(self, instance: Message, action, **kwargs):
+        return MessageSerializer(instance).data 
 
+    @chats_messages_handler.groups_for_signal
+    def chats_messages_handler(self, instance: Message, **kwargs):
+        # this block of code is called very often *DO NOT make DB QUERIES HERE*
+        print("groups_for_signal", instance)
+        yield f'-chat__{instance.chat_id}'
+
+    @chats_messages_handler.groups_for_consumer
+    def chats_messages_handler(self, chat: int, **kwargs):
+        # This is called when you subscribe/unsubscribe
+        print("groups_for_consumer", chat)
+        if chat is not None:
+            yield f'-chat__{chat}'
+
+    @action()
+    async def subscribe_to_notifications(self, **kwargs):
+        # check user has permission to do this
+        queryset = await database_sync_to_async(self.get_queryset)()
+        queryset = await database_sync_to_async(queryset.filter)(members=self.scope["user"].pk)
+        chats = await database_sync_to_async(list)(queryset)
+        # queryset = await database_sync_to_async(self.scope["user"].chats.all)()
+        # chats = await database_sync_to_async(list)(queryset)
+        print("subscribe_to_notifications", chats)
+        for chat in chats:
+            print("subscribing to ", chat)
+            await self.chats_messages_handler.subscribe(chat=chat.pk)
+        return {}, status.HTTP_201_CREATED
 class DemultiplexerAsyncJson(AsyncJsonWebsocketDemultiplexer):
     applications = {
         "user": UserConsumer.as_asgi(),

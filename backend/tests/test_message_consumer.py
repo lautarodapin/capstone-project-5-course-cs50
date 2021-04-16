@@ -13,12 +13,13 @@ from channels.routing import URLRouter
 from django.urls import re_path
 from django.utils.timezone import now
 
-from backend.consumers import MessageConsumer
+from backend.consumers import ChatConsumer, MessageConsumer
 from backend.models import Chat, Message, User
 from asyncio.exceptions import TimeoutError
 
 application = URLRouter([
-    re_path(r"^testws/$", MessageConsumer.as_asgi()),
+    re_path(r"^test/message/$", MessageConsumer.as_asgi()),
+    re_path(r"^test/chat/$", ChatConsumer.as_asgi()),
 ])
 
 @pytest.fixture
@@ -31,16 +32,29 @@ def basic_users()->Tuple[User, User, Chat]:
     chat.save()
     return user1, user2, chat
 
+@pytest.fixture
+def basic_chats() -> Tuple[User, Chat, Chat, Chat]:
+    user1 : User = User.objects.create_user(username="test1", password="testpassword123")
+    chat_1 : Chat = Chat.objects.create()
+    chat_2 : Chat = Chat.objects.create()
+    chat_3 : Chat = Chat.objects.create()
+    chat_1.members.add(user1.pk)
+    chat_1.save()
+    chat_2.members.add(user1.pk)
+    chat_2.save()
+    chat_3.members.add(user1.pk)
+    chat_3.save()
+    return user1, chat_1, chat_2, chat_3
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     user_1, user_2, chat = basic_users
-    communicator = AuthWebsocketCommunicator(application, "/testws/", user=user_1)
+    communicator = AuthWebsocketCommunicator(application, "/test/message/", user=user_1)
     connected, subprotocol = await communicator.connect()
     assert connected
 
-    communicator_2 = AuthWebsocketCommunicator(application, "/testws/", user=user_2)
+    communicator_2 = AuthWebsocketCommunicator(application, "/test/message/", user=user_2)
     connected, subprotocol = await communicator_2.connect()
     assert connected
 
@@ -109,4 +123,55 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
 
     await communicator.disconnect()
     response = await communicator_2.receive_json_from()
+    assert response["action"] == "notification"
+
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, Chat]):
+    user, chat_1, chat_2, chat_3 = basic_chats
+
+    communicator = AuthWebsocketCommunicator(application, "/test/chat/", user=user)
+    connected, subprotocol = await communicator.connect()
+    assert connected
+    
+    await communicator.send_json_to({
+        "action": "subscribe_to_notifications",
+        "request_id": now().timestamp(),
+    })
+
+    response = await communicator.receive_json_from()
+    assert response["response_status"] == status.HTTP_201_CREATED
+    assert response["action"] == "subscribe_to_notifications"
+    
+    await database_sync_to_async(Message.objects.create)(
+        chat=chat_1,
+        user=user,
+        text="test"
+    )
+    response = await communicator.receive_json_from()
+    assert response
+    assert response["response_status"] == status.HTTP_201_CREATED
+    assert response["data"]["text"] == "test"
+    assert response["action"] == "notification"
+    await database_sync_to_async(Message.objects.create)(
+        chat=chat_2,
+        user=user,
+        text="test"
+    )
+    response = await communicator.receive_json_from()
+    assert response
+    assert response["response_status"] == status.HTTP_201_CREATED
+    assert response["data"]["text"] == "test"
+    assert response["action"] == "notification"
+    await database_sync_to_async(Message.objects.create)(
+        chat=chat_3,
+        user=user,
+        text="test"
+    )
+    response = await communicator.receive_json_from()
+    assert response
+    assert response["response_status"] == status.HTTP_201_CREATED
+    assert response["data"]["text"] == "test"
     assert response["action"] == "notification"
