@@ -50,6 +50,16 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         )
         await self.send_json(content)
 
+    async def disconnect(self, code):
+        await self.channel_layer.group_send(
+            self.chat_room_name,
+            {
+                "type": "notification",
+                "message": f"{self.scope['user'].username} joined the chat"
+            }
+        )
+        return await super().disconnect(code)
+
     @model_observer(Message)
     async def message_create_handler(self, message, observer=None, action=None, **kwargs):
         # due to not being able to make DB QUERIES when selecting a group
@@ -65,7 +75,6 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     def message_create_handler(self, instance, **kwargs):
         # this block of code is called very often *DO NOT make DB QUERIES HERE*
         yield f'-chat__{instance.chat_id}'
-        yield f'-pk__{instance.pk}'
 
     @message_create_handler.groups_for_consumer
     def message_create_handler(self, chat=None, **kwargs):

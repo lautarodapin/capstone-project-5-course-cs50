@@ -15,7 +15,8 @@ from django.utils.timezone import now
 
 from backend.consumers import MessageConsumer
 from backend.models import Chat, Message, User
-from asyncio import TimeoutError
+from asyncio.exceptions import TimeoutError
+
 application = URLRouter([
     re_path(r"^testws/$", MessageConsumer.as_asgi()),
 ])
@@ -39,6 +40,10 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     connected, subprotocol = await communicator.connect()
     assert connected
 
+    communicator_2 = AuthWebsocketCommunicator(application, "/testws/", user=user_2)
+    connected, subprotocol = await communicator_2.connect()
+    assert connected
+
     await communicator.send_json_to({
         "action": "subscribe_to_messages_in_chat",
         "chat": chat.pk,
@@ -54,7 +59,7 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     assert response["action"] == "create"
     assert response["data"]["text"] == message.text
     assert response["data"]["user"]["id"] == user_2.pk
-    assert response["data"]["chat"]["id"] == chat.pk
+    assert response["data"]["chat"]["id"] == chat.pk    
 
 
     # If a message is sent in another chat that isn't subscribed, it shouldn't
@@ -67,7 +72,7 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
         (user=user_2, chat=chat_2, text="user 2 sends a message")
 
     # try:
-    #     await communicator.receive_json_from()
+    #     response = await communicator.receive_json_from()
     #     assert False
     # except TimeoutError:
     #     assert True
@@ -85,4 +90,23 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     assert response["status"] == status.HTTP_200_OK
     assert response["message"] == f"{user_1.username} joined the chat"
 
+
+    # try:
+    #     response = await communicator_2.receive_json_from()
+    #     assert False
+    # except TimeoutError:
+    #     assert True
+
+    await communicator_2.send_json_to({
+        "action":"join_chat",
+        "request_id": now().timestamp(),
+        "chat": chat.pk,
+    })
+    response = await communicator.receive_json_from()
+    assert response["action"] == "notification"
+    response = await communicator_2.receive_json_from()
+    assert response["action"] == "notification"
+
     await communicator.disconnect()
+    response = await communicator_2.receive_json_from()
+    assert response["action"] == "notification"
