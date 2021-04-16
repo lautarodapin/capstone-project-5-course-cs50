@@ -65,7 +65,7 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     })
 
     response = await communicator.receive_json_from()
-    assert response["status"] == status.HTTP_200_OK
+    assert response["response_status"] == status.HTTP_200_OK
 
     message: Message = await database_sync_to_async(Message.objects.create)\
         (user=user_2, chat=chat, text="user 2 sends a message")
@@ -175,6 +175,26 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
     assert response["response_status"] == status.HTTP_201_CREATED
     assert response["data"]["text"] == "test"
     assert response["action"] == "notification"
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_subscribe_to_messages_in_chat_authentication(basic_chats: Tuple[User, Chat, Chat, Chat]):
+    user, chat_1, chat_2, chat_3 = basic_chats
+
+    communicator = AuthWebsocketCommunicator(application, "/test/message/")
+    connected, subprotocol = await communicator.connect()
+    assert connected
+    
+    await communicator.send_json_to({
+        "action": "subscribe_to_messages_in_chat",
+        "request_id": now().timestamp(),
+        "chat": chat_1.pk,
+    })
+
+    response = await communicator.receive_json_from()
+    assert response["response_status"] == status.HTTP_403_FORBIDDEN
+    
+    await communicator.disconnect()
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio

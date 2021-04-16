@@ -51,13 +51,14 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         await self.send_json(content)
 
     async def disconnect(self, code):
-        await self.channel_layer.group_send(
-            self.chat_room_name,
-            {
-                "type": "notification",
-                "message": f"{self.scope['user'].username} joined the chat"
-            }
-        )
+        if hasattr(self, "chat_room_name"):
+            await self.channel_layer.group_send(
+                self.chat_room_name,
+                {
+                    "type": "notification",
+                    "message": f"{self.scope['user'].username} joined the chat"
+                }
+            )
         return await super().disconnect(code)
 
     @model_observer(Message)
@@ -85,13 +86,15 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     @action()
     async def subscribe_to_messages_in_chat(self, chat, **kwargs):
         # check user has permission to do this
+        if "user" not in self.scope or not self.scope["user"].is_authenticated:
+            return {}, status.HTTP_403_FORBIDDEN
         await self.message_create_handler.subscribe(chat=chat)
-        await self.send_json({
+        return {
             "action": "subscribe_to_messages_in_chat",
             "request_id": kwargs["request_id"],
             "chat": chat,
             "status": status.HTTP_200_OK,
-        })
+        }, status.HTTP_200_OK
     # TODO make test
 
 class UserConsumer(ListModelMixin, GenericAsyncAPIConsumer):
