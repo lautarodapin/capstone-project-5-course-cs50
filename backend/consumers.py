@@ -95,7 +95,7 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             "chat": chat,
             "status": status.HTTP_200_OK,
         }, status.HTTP_200_OK
-    # TODO make test
+
 
 class UserConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     queryset = User.objects.all()
