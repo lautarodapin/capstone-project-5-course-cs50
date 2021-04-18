@@ -24,6 +24,7 @@ const store = createStore({
             currentUser: null,
             status: "done",
             ws: null,
+            notifications: [],
         }
     },
     getters: {
@@ -73,9 +74,25 @@ const store = createStore({
                     }
                 }))
             }
-            state.ws.onmessage = function(e){
+            state.ws.addEventListener("message", function(e){
                 console.log(JSON.parse(e.data))
-            }
+                const data = JSON.parse(e.data)
+                switch (data.stream) {
+                    case "chat":
+                        switch (data.payload.action) {
+                            case "notification":
+                                state.notifications.push(data.payload.data)
+                                break;
+                        
+                            default:
+                                break;
+                        }
+                        break;
+                
+                    default:
+                        break;
+                }
+            });
             state.ws.onclose = function(e){
                 console.log(e);
                 setTimeout(function(){dispatch("createWs")}, 1000 * 10);
@@ -375,33 +392,6 @@ const ChatPage = {
             }
             this.$store.state.ws.send(JSON.stringify(data))
         },
-        createWebsocket() {
-            self = this;
-            this.ws = new WebSocket(`${ws_schema}//${host}/ws/chat/${this.id}/`)
-            this.ws.onmessage = function (response) {
-                const data = JSON.parse(response.data)
-                console.log(response, data)
-                switch (data.type) {
-                    case "chat_message":
-                        self.messages.push(data.data)
-                        self.scrollBottom();
-                        break;
-                    case "notification":
-                        console.log("notification", data)
-                        break;
-                    default:
-                        break;
-                }
-            }
-            this.onclose = function (e) {
-                console.log(e)
-                setTimeout(function () { self.createWebsocket; }, 1000 * 10);
-            }
-            this.onerror = function (e) {
-                console.log(e)
-                self.ws.close();
-            }
-        },
         getMessages() {
             return new Promise((resolve, reject) => {
                 axios.get(`/api/messages/messages_in_chat/?chat_id=${this.id}`)
@@ -428,6 +418,7 @@ const ChatPage = {
         },
     },
     created() {
+        var self = this;
         this.$store.commit("status", "loading")
         Promise.all([this.getChat(), this.getMessages()])
             .then(([chat_response, message_response]) => {
@@ -441,7 +432,26 @@ const ChatPage = {
             .catch(([chat_error, message_error]) => {
                 console.log(error)
             })
-        this.createWebsocket();
+        this.$store.state.ws.addEventListener("message", function(e){
+            const data = JSON.parse(e.data)
+            switch (data.stream) {
+                case "message":
+                    switch (data.payload.action) {
+                        case "create":
+                            self.messages.push(data.payload.data)
+                            /**
+                             * TODO como agrego esta funciona al resto de funciones como notificaciones?
+                             */
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+            
+                default:
+                    break;
+                }
+            });
     },
     mounted(){
         this.scrollBottom();
