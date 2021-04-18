@@ -4,6 +4,7 @@ const { createStore } = Vuex
 
 const ws_schema = window.location.protocol === "http:" ? "ws:" : "wss:";
 const host = window.location.host;
+const ws_path = ws_schema + "//" + host + "/ws/";
 
 function readCookie(name) {
     var nameEQ = name + "=";
@@ -21,13 +22,15 @@ const store = createStore({
     state() {
         return {
             currentUser: null,
-            status: "done"
+            status: "done",
+            ws: null,
         }
     },
     getters: {
         user: (state) => state.currentUser,
         status: (state) => state.status,
         isAuth: (state) => state.currentUser ? true : false,
+        wsConnected(state){return state != null && state.ws.readyState === 1? true : false} // TODO this isnt updating in the computed values
     },
     mutations: {
         login(state, user) {
@@ -38,7 +41,10 @@ const store = createStore({
         },
         status(state, value) {
             state.status = value;
-        }
+        },
+        createWs(state) {
+            state.ws = new WebSocket(ws_path)
+        },
     },
     actions: {
         login({ commit }) {
@@ -54,6 +60,21 @@ const store = createStore({
                         reject(error.response)
                     })
             })
+        },
+        createWs({ commit, state, dispatch}){
+            console.log("Dispatching creating ws")
+            commit("createWs")
+            state.ws.onmessage = function(e){
+                console.log(JSON.stringify(e.data))
+            }
+            state.ws.onclose = function(e){
+                console.log(e);
+                setTimeout(function(){dispatch("createWs")}, 1000 * 10);
+            }
+            state.ws.onerror = function(e){
+                console.log(e);
+                state.ws.close();
+            }
         },
         getAllUsers({ commit }) {
             return new Promise((resolve, reject) => {
@@ -190,71 +211,6 @@ const ChatPaper = {
 
 }
 
-const Test = {
-    template: `
-        <div class="mesgs">
-            <div class="msg_history">
-                <div class="incoming_msg">
-                    <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png"
-                            alt="sunil">
-                    </div>
-                    <div class="received_msg">
-                        <div class="received_withd_msg">
-                            <p>Test which is a new approach to have all
-                                solutions</p>
-                            <span class="time_date"> 11:01 AM | June 9</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="outgoing_msg">
-                    <div class="sent_msg">
-                        <p>Test which is a new approach to have all
-                            solutions</p>
-                        <span class="time_date"> 11:01 AM | June 9</span>
-                    </div>
-                </div>
-                <div class="incoming_msg">
-                    <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png"
-                            alt="sunil">
-                    </div>
-                    <div class="received_msg">
-                        <div class="received_withd_msg">
-                            <p>Test, which is a new approach to have</p>
-                            <span class="time_date"> 11:01 AM | Yesterday</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="outgoing_msg">
-                    <div class="sent_msg">
-                        <p>Apollo University, Delhi, India Test</p>
-                        <span class="time_date"> 11:01 AM | Today</span>
-                    </div>
-                </div>
-                <div class="incoming_msg">
-                    <div class="incoming_msg_img"> <img src="https://ptetutorials.com/images/user-profile.png"
-                            alt="sunil">
-                    </div>
-                    <div class="received_msg">
-                        <div class="received_withd_msg">
-                            <p>We work directly with our designers and suppliers,
-                                and sell direct to you, which means quality, exclusive
-                                products, at a price anyone can afford.</p>
-                            <span class="time_date"> 11:01 AM | Today</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="type_msg">
-                <div class="input_msg_write">
-                    <input type="text" class="write_msg" placeholder="Type a message" />
-                    <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o"
-                            aria-hidden="true"></i></button>
-                </div>
-            </div>
-        </div>
-    `,
-}
-
 const ContactPage = {
     template: `
     <div>
@@ -317,6 +273,7 @@ const ListChatPage = {
     template: `
         <div class="container-sm">
             <h3 class="display-6">Chats Page</h3>
+            {{wsConnected}}
             <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
                 <div class="card-body">
                     {{otherMember(chat).username}}
@@ -349,6 +306,7 @@ const ListChatPage = {
     computed: {
         currentUser() { return this.$store.getters.user },
         status() { return this.$store.getters.status; },
+        wsConnected() { return this.$store.state.ws.readyState;},
     },
     created() {
         this.$store.dispatch("getAllUsers").then(response => {
@@ -487,6 +445,7 @@ const app = createApp({
         status() { return this.$store.getters.status; },
     },
     created() {
+        this.$store.dispatch("createWs")
     }
 })
 
