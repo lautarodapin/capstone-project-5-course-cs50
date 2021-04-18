@@ -23,9 +23,20 @@ import json
 
 logger = getLogger(__name__)
 
-class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
+class MessageConsumer(
+    ListModelMixin, 
+    CreateModelMixin, 
+    GenericAsyncAPIConsumer):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+
+    @action()
+    def create(self, data, **kwargs):
+        serializer = self.get_serializer(data=data, action_kwargs=kwargs)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer, **kwargs)
+        return serializer.data, status.HTTP_201_CREATED
+
 
     @action()
     async def join_chat(self, chat: int, **kwargs):
@@ -86,7 +97,9 @@ class MessageConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     @action()
     async def subscribe_to_messages_in_chat(self, chat, **kwargs):
         # check user has permission to do this
-        if "user" not in self.scope or not self.scope["user"].is_authenticated:
+        if "user" not in self.scope or \
+            not self.scope["user"].is_authenticated \
+            :
             return {}, status.HTTP_403_FORBIDDEN
         await self.message_create_handler.subscribe(chat=chat)
         return {
@@ -126,13 +139,11 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     @chats_messages_handler.groups_for_signal
     def chats_messages_handler(self, instance: Message, **kwargs):
         # this block of code is called very often *DO NOT make DB QUERIES HERE*
-        print("groups_for_signal", instance)
         yield f'-chat__{instance.chat_id}'
 
     @chats_messages_handler.groups_for_consumer
     def chats_messages_handler(self, chat: int, **kwargs):
         # This is called when you subscribe/unsubscribe
-        print("groups_for_consumer", chat)
         if chat is not None:
             yield f'-chat__{chat}'
 

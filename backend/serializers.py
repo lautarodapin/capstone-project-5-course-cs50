@@ -5,13 +5,6 @@ from rest_framework.authtoken.models import Token
 
 from .models import (User, Chat, Message)
 
-class MessageSerializer(ModelSerializer):
-
-    class Meta:
-        model = Message
-        depth = 2
-        fields = ["id", "user", "chat", "text", "created_at", "mod_at",]
-
 
 class ChatSerializer(ModelSerializer):
 
@@ -43,3 +36,15 @@ class UserSerializer(ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+
+class MessageSerializer(ModelSerializer):
+
+    class Meta:
+        model = Message
+        fields = ["id", "user", "chat", "text", "created_at", "mod_at",]
+
+    def to_representation(self, instance : Message):
+        data = super().to_representation(instance)
+        data["user"] = UserSerializer(instance.user).data
+        data["chat"] = ChatSerializer(instance.chat).data
+        return data

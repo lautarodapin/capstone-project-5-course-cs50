@@ -64,8 +64,17 @@ const store = createStore({
         createWs({ commit, state, dispatch}){
             console.log("Dispatching creating ws")
             commit("createWs")
+            state.ws.onopen = function(){
+                state.ws.send(JSON.stringify({
+                    stream: "chat",
+                    payload: {
+                        action: "subscribe_to_notifications",
+                        request_id: new Date().getTime(),
+                    }
+                }))
+            }
             state.ws.onmessage = function(e){
-                console.log(JSON.stringify(e.data))
+                console.log(JSON.parse(e.data))
             }
             state.ws.onclose = function(e){
                 console.log(e);
@@ -273,12 +282,12 @@ const ListChatPage = {
     template: `
         <div class="container-sm">
             <h3 class="display-6">Chats Page</h3>
-            {{wsConnected}}
             <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
+                {{chat.id}}
                 <div class="card-body">
                     {{otherMember(chat).username}}
                     <small class="text-muted">
-                        {{getLastChatMessage(chat).text}}
+                        {{getLastChatMessage(chat)?.text}}
                     </small>
                 </div>
             </div>
@@ -353,11 +362,18 @@ const ChatPage = {
         createMessage(message) {
             console.log(message)
             const data = {
-                type: "chat_message",
-                user: this.currentUser.id,
-                message: message,
+                stream: "message",
+                payload: {
+                    action: "create",
+                    data:{
+                        user: this.currentUser.id,
+                        chat: this.id,
+                        text: message,
+                    },
+                    request_id: new Date().getTime(),
+                },
             }
-            this.ws.send(JSON.stringify(data))
+            this.$store.state.ws.send(JSON.stringify(data))
         },
         createWebsocket() {
             self = this;
@@ -453,7 +469,6 @@ const routes = [
     { path: '/', name: "ListChatPage", component: ListChatPage },
     { path: '/contacts', name: "ContactPage", component: ContactPage },
     { path: '/chat/:id', name: "ChatPage", component: ChatPage },
-    { path: '/test', component: Test },
 ]
 
 const router = createRouter({

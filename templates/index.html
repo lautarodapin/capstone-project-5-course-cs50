@@ -20,7 +20,12 @@
                             <li class="nav-item">
                                 <router-link :to="{name: 'ContactPage'}" class="nav-link" :class="this.$route.name == 'ContactPage'?'active':''">Contacts</router-link>
                             </li>
-                            
+                            <li class="nav-item">
+                                <a href="/accounts/logout/" class="nav-link">Logout</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/accounts/login/" class="nav-link">Login</a>
+                            </li>
                         </ul>
                     </div>
                 </div>
