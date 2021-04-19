@@ -140,6 +140,26 @@ const store = createStore({
 })
 
 
+const NotificationDialog = {
+    template: `
+
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 5">
+    <div id="liveToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <img src="..." class="rounded me-2" alt="...">
+        <strong class="me-auto">Bootstrap</strong>
+        <small>11 mins ago</small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        Hello, world! This is a toast message.
+      </div>
+    </div>
+  </div>
+    `,
+    props: ["notification",],
+}
+
 
 const MessageForm = {
     template: `
@@ -298,6 +318,9 @@ const ContactPage = {
 const ListChatPage = {
     template: `
         <div class="container-sm">
+            <div v-if="notifications.length != 0">
+                Notification
+            </div>
             <h3 class="display-6">Chats Page</h3>
             <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
                 {{chat.id}}
@@ -310,6 +333,7 @@ const ListChatPage = {
             </div>
         </div>
     `,
+    components: {NotificationDialog, },
     data() {
         return {
             users: [],
@@ -333,6 +357,7 @@ const ListChatPage = {
         currentUser() { return this.$store.getters.user },
         status() { return this.$store.getters.status; },
         wsConnected() { return this.$store.state.ws.readyState;},
+        notifications(){ return this.$store.state.notifications;},
     },
     created() {
         this.$store.dispatch("getAllUsers").then(response => {
@@ -357,7 +382,7 @@ const ChatPage = {
             </div>
         </div>
     `,
-    components: { MessageForm, ChatPaper },
+    components: { MessageForm, ChatPaper, NotificationDialog, },
     data() {
         return {
             messages: [],
@@ -370,6 +395,7 @@ const ChatPage = {
         id() { return this.$route.params.id; },
         currentUser() { return this.$store.getters.user; },
         status() { return this.$store.getters.status; },
+        notifications(){ return this.$store.state.notifications;},
     },
     methods: {
         scrollBottom(){
@@ -416,23 +442,7 @@ const ChatPage = {
                     })
             })
         },
-    },
-    created() {
-        var self = this;
-        this.$store.commit("status", "loading")
-        Promise.all([this.getChat(), this.getMessages()])
-            .then(([chat_response, message_response]) => {
-                console.log("values", chat_response, message_response)
-                this.chat = chat_response.data;
-                this.messages = message_response.data.results;
-                this.members = chat_response.data.members;
-                this.$store.commit("status", "done")
-
-            })
-            .catch(([chat_error, message_error]) => {
-                console.log(error)
-            })
-        this.$store.state.ws.addEventListener("message", function(e){
+        onMessageHandler(e){
             const data = JSON.parse(e.data)
             switch (data.stream) {
                 case "message":
@@ -450,12 +460,32 @@ const ChatPage = {
             
                 default:
                     break;
-                }
-            });
+            }
+        }
+    },
+    created() {
+        var self = this;
+        this.$store.commit("status", "loading")
+        Promise.all([this.getChat(), this.getMessages()])
+            .then(([chat_response, message_response]) => {
+                console.log("values", chat_response, message_response)
+                this.chat = chat_response.data;
+                this.messages = message_response.data.results;
+                this.members = chat_response.data.members;
+                this.$store.commit("status", "done")
+
+            })
+            .catch(([chat_error, message_error]) => {
+                console.log(error)
+            })
+        this.$store.state.ws.addEventListener("message", this.onMessageHandler);
     },
     mounted(){
         this.scrollBottom();
-    }
+    },
+    beforeUnmount(){
+        this.$store.state.ws.removeEventListener("message", this.onMessageHandler)
+    },
 }
 
 const app = createApp({
@@ -469,6 +499,7 @@ const app = createApp({
     computed: {
         user() { return this.$store.getters.user; },
         status() { return this.$store.getters.status; },
+        notifications(){ return this.$store.state.notifications;},
     },
     created() {
         this.$store.dispatch("createWs")
