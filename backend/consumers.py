@@ -1,9 +1,10 @@
 from logging import getLogger
-from typing import Dict, OrderedDict, Union
+from typing import Dict, Optional, OrderedDict, Union
 from django.db.models import query
 import pytest
 from channels.generic.websocket import AsyncJsonWebsocketConsumer, AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from asgiref.sync import SyncToAsync, sync_to_async
 from django.core.checks import messages
 from rest_framework.utils.serializer_helpers import ReturnDict
 from rest_framework import status
@@ -23,12 +24,11 @@ import json
 
 logger = getLogger(__name__)
 
-class MessageConsumer(
-    ListModelMixin, 
-    CreateModelMixin, 
-    GenericAsyncAPIConsumer):
+class MessageConsumer(ListModelMixin, CreateModelMixin, GenericAsyncAPIConsumer):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    chat_room_name : Optional[str]
+    chat: Optional[int]
 
     @action()
     def create(self, data, **kwargs):
@@ -37,26 +37,35 @@ class MessageConsumer(
         self.perform_create(serializer, **kwargs)
         return serializer.data, status.HTTP_201_CREATED
 
-
     @action()
     async def join_chat(self, chat: int, **kwargs):
         self.chat_room_name = f"chat_{chat}"
+        self.chat = chat
         await self.channel_layer.group_add(
             self.chat_room_name,
             self.channel_name,
         )
+        # user_serializer = await database_sync_to_async(UserSerializer)(self.scope["user"], many=False)
         await self.channel_layer.group_send(
             self.chat_room_name,
             {
                 "type": "notification",
-                "message": f"{self.scope['user'].username} joined the chat"
+                "message": f"{self.scope['user'].username} joined the chat",
+                "chat": chat,
+                "user": {
+                    "username": self.scope["user"].username,
+                    "id": self.scope["user"].pk,
+                },
             }
         )
+    
 
     async def notification(self, event):
         content = dict(
             action="notification",
             message=event["message"],
+            chat=event["chat"],
+            user=event["user"],
             status=status.HTTP_200_OK
         )
         await self.send_json(content)
@@ -67,7 +76,12 @@ class MessageConsumer(
                 self.chat_room_name,
                 {
                     "type": "notification",
-                    "message": f"{self.scope['user'].username} joined the chat"
+                    "message": f"{self.scope['user'].username} joined the chat",
+                    "chat": self.chat,
+                    "user": {
+                        "username": self.scope["user"].username,
+                        "id": self.scope["user"].pk,
+                    },
                 }
             )
         return await super().disconnect(code)
