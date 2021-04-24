@@ -26,12 +26,37 @@
                             <li class="nav-item">
                                 <a href="/accounts/login/" class="nav-link">Login</a>
                             </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" :class="notifications.length == 0? 'disabled':''" href="#" id="navbarDropdown" role="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    Notifications
+                                    <span class="badge bg-secondary">[[notifications.length]]</span>
+                                    <span class="visually-hidden">unread messages</span>
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                    <li v-for="(notification, index) in notifications" :key="index">
+                                        <a class="dropdown-item" href="#">
+                                            <router-link :to="{name: 'ChatPage', params:{id: notification.chat.id}}"
+                                                class="text-reset"
+                                            >
+                                                <strong>
+                                                    [[notification.user.username]] 
+                                                </strong>
+                                                [[notification.text]]
+                                            </router-link>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </nav>
         </header>
         <main>
+            <div v-for="notification in notifications" :key="notification.id">
+                [[notification.message]]
+            </div>
             <router-view></router-view>
         </main>
     </div>
