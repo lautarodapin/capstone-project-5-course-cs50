@@ -444,11 +444,12 @@ const ChatPage = {
         },
         onMessageHandler(e){
             const data = JSON.parse(e.data)
+            console.log(data)
             switch (data.stream) {
                 case "message":
                     switch (data.payload.action) {
                         case "create":
-                            self.messages.push(data.payload.data)
+                            this.messages.push(data.payload.data)
                             /**
                              * TODO como agrego esta funciona al resto de funciones como notificaciones?
                              */
@@ -478,6 +479,13 @@ const ChatPage = {
             .catch(([chat_error, message_error]) => {
                 console.log(error)
             })
+        this.$store.state.ws.send(JSON.stringify({
+            stream: "message",
+            payload: {
+                chat: this.id,
+                request_id: new Date().getTime(),
+            },
+        }))
         this.$store.state.ws.addEventListener("message", this.onMessageHandler);
     },
     mounted(){
