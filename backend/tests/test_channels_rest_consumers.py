@@ -118,16 +118,13 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
     })
     response = await communicator.receive_json_from()
     assert response["action"] == "notification"
-    assert response == {
-        "action":"notification",
-        "message":f"{user_2.username} joined the chat",
-        "chat": chat.pk,
-        "user": {
-            "username": user_2.username,
-            "id": user_2.pk,
-        },
-        "status": status.HTTP_200_OK
-    }
+    assert response["action"] == "notification"
+    assert response["message"] == f"{user_2.username} joined the chat"
+    assert response["chat"] == chat.pk
+    assert response["user"]["username"] == user_2.username
+    assert response["user"]["id"] == user_2.pk
+    assert response["status"] == status.HTTP_200_OK
+
     response = await communicator_2.receive_json_from()
     assert response["action"] == "notification"
 

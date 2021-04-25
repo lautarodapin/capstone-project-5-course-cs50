@@ -37,6 +37,10 @@ class MessageConsumer(ListModelMixin, CreateModelMixin, GenericAsyncAPIConsumer)
         self.perform_create(serializer, **kwargs)
         return serializer.data, status.HTTP_201_CREATED
 
+    @database_sync_to_async
+    def current_user(self) -> ReturnDict:
+        return UserSerializer(self.scope["user"], many=False).data
+
     @action()
     async def join_chat(self, chat: int, **kwargs):
         self.chat_room_name = f"chat_{chat}"
@@ -45,17 +49,14 @@ class MessageConsumer(ListModelMixin, CreateModelMixin, GenericAsyncAPIConsumer)
             self.chat_room_name,
             self.channel_name,
         )
-        # user_serializer = await database_sync_to_async(UserSerializer)(self.scope["user"], many=False)
+        user_serializer = await self.current_user()
         await self.channel_layer.group_send(
             self.chat_room_name,
             {
                 "type": "notification",
                 "message": f"{self.scope['user'].username} joined the chat",
                 "chat": chat,
-                "user": {
-                    "username": self.scope["user"].username,
-                    "id": self.scope["user"].pk,
-                },
+                "user":user_serializer
             }
         )
     
