@@ -35,7 +35,7 @@ class MessageConsumer(ListModelMixin, CreateModelMixin, GenericAsyncAPIConsumer)
         serializer = self.get_serializer(data=data, action_kwargs=kwargs)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer, **kwargs)
-        return serializer.data, status.HTTP_201_CREATED
+        return None, status.HTTP_201_CREATED
 
     @database_sync_to_async
     def current_user(self) -> ReturnDict:

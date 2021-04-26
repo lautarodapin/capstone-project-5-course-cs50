@@ -75,7 +75,7 @@ const store = createStore({
                 }))
             }
             state.ws.addEventListener("message", function(e){
-                console.log(JSON.parse(e.data))
+                console.log("store event listener", JSON.parse(e.data))
                 const data = JSON.parse(e.data)
                 switch (data.stream) {
                     case "chat":
@@ -444,11 +444,12 @@ const ChatPage = {
         },
         onMessageHandler(e){
             const data = JSON.parse(e.data)
-            console.log(data)
+            console.log("onMessageHandler", data)
             switch (data.stream) {
                 case "message":
                     switch (data.payload.action) {
                         case "create":
+                            if (data.payload.data === null) return;
                             this.messages.push(data.payload.data)
                             /**
                              * TODO como agrego esta funciona al resto de funciones como notificaciones?
@@ -473,20 +474,20 @@ const ChatPage = {
                 this.chat = chat_response.data;
                 this.messages = message_response.data.results;
                 this.members = chat_response.data.members;
-                this.$store.commit("status", "done")
-
+                this.$store.state.ws.send(JSON.stringify({
+                    stream: "message",
+                    payload: {
+                        action: "subscribe_to_messages_in_chat",
+                        chat: this.id,
+                        request_id: new Date().getTime(),
+                    },
+                }))
+                this.$store.commit("status", "done")    
             })
             .catch(([chat_error, message_error]) => {
                 console.log(error)
             })
-        this.$store.state.ws.send(JSON.stringify({
-            stream: "message",
-            payload: {
-                chat: this.id,
-                request_id: new Date().getTime(),
-            },
-        }))
-        this.$store.state.ws.addEventListener("message", this.onMessageHandler);
+            this.$store.state.ws.addEventListener("message", this.onMessageHandler);
     },
     mounted(){
         this.scrollBottom();
