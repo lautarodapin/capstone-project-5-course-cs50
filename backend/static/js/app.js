@@ -506,6 +506,13 @@ const app = createApp({
             test: "TEST"
         }
     },
+    methods: {
+        removeNotification(notification){
+            var index = this.$store.state.notifications.indexOf(notification)
+            if (index > -1) this.$store.state.notifications.splice(index, 1);
+            
+        },
+    },
     computed: {
         user() { return this.$store.getters.user; },
         status() { return this.$store.getters.status; },

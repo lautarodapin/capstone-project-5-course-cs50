@@ -42,6 +42,7 @@
                                         <a class="dropdown-item" href="#">
                                             <router-link :to="{name: 'ChatPage', params:{id: notification.chat.id}}"
                                                 class="text-reset"
+                                                @click="removeNotification(notification)"
                                             >
                                                 <strong>
                                                     [[notification.user.username]] 
