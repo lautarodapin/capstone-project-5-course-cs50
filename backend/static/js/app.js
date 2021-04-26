@@ -268,10 +268,14 @@ const ContactPage = {
                 class="card mb-2"
             >
                 <div class="card-body">
-                    {{user.username}}
-                    <small class="text-muted">
-                        {{user.last_login}}
-                    </small>
+                    <p class="m-0 p-0">
+                        {{user.username}}
+                    </p>
+                    <p class="m-0 p-0">
+                        <small class="text-muted">
+                            Last login: {{parseDate(user.last_login)}}
+                        </small>
+                    </p>
                 </div>
             </div>
         </div>
@@ -288,6 +292,11 @@ const ContactPage = {
         }
     },
     methods: {
+        parseDate(dateString) {
+            if(dateString===null)return "-";
+            var date = new Date(dateString)
+            return date.toLocaleTimeString() + " " + date.toLocaleDateString()
+        },
         createChat(user) {
             const data = {
                 members: [user.id, this.currentUser.id],
@@ -323,12 +332,15 @@ const ListChatPage = {
             </div>
             <h3 class="display-6">Chats Page</h3>
             <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
-                {{chat.id}}
                 <div class="card-body">
-                    {{otherMember(chat).username}}
-                    <small class="text-muted">
-                        {{getLastChatMessage(chat)?.text}}
-                    </small>
+                    <p class="m-0 p-0">
+                        {{otherMember(chat).username}}
+                    </p>
+                    <p class="m-0 p-0">
+                        <small class="text-muted">
+                            {{getLastChatMessage(chat)?.text}}
+                        </small>
+                    </p>
                 </div>
             </div>
         </div>

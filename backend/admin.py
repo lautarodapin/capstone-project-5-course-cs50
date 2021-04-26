@@ -7,7 +7,6 @@ from .models import User, Chat, Message
 class UserAdmin(admin.ModelAdmin):     
     list_display = (
         'id',
-        'password',
         'last_login',
         'is_superuser',
         'username',
@@ -17,6 +16,7 @@ class UserAdmin(admin.ModelAdmin):
         'is_staff',
         'is_active',
         'date_joined',
+        "last_login",
     )
     list_filter = (
         'last_login',
