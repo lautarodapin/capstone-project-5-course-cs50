@@ -482,12 +482,13 @@ const ChatPage = {
                         request_id: new Date().getTime(),
                     },
                 }))
-                this.$store.commit("status", "done")    
+                this.$store.commit("status", "done")
             })
             .catch(([chat_error, message_error]) => {
                 console.log(error)
             })
             this.$store.state.ws.addEventListener("message", this.onMessageHandler);
+            // TODO add reconnect
     },
     mounted(){
         this.scrollBottom();
