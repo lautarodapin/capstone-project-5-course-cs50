@@ -372,7 +372,13 @@ const ListChatPage = {
 const ChatPage = {
     template: `
         <div>
-            <div v-if="status === 'done'" class="alert">
+            <div v-if="status === 'done'" class="alert alert-dismissible fade show">
+                <div v-for="(alert, index) in alerts" :key="index"
+                    class="alert alert-info" role="alert"
+                >
+                    {{alert.message}}
+                    <button @click="removeAlert(alert)" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
                 <ChatPaper :messages="messages" @createMessage="createMessage"/>
             </div>
             <div v-else class="container-sm text-center">
@@ -389,6 +395,7 @@ const ChatPage = {
             members: [],
             chat: [],
             ws: null,
+            alerts: [],
         }
     },
     computed: {
@@ -398,7 +405,11 @@ const ChatPage = {
         notifications(){ return this.$store.state.notifications;},
     },
     methods: {
-        scrollBottom(){
+        removeAlert(alert){
+            var index = this.alerts.indexOf(alert)
+            if (index > -1) this.alerts.splice(index, 1)
+        },
+        scrollBottom(){ 
             var el = document.getElementById("scrollBottom")
             if (el) el.scrollIntoView({behavior: 'smooth'});
         },
@@ -455,6 +466,10 @@ const ChatPage = {
                              * TODO como agrego esta funciona al resto de funciones como notificaciones?
                              */
                             break;
+                        case "notification":
+                            if (this.currentUser.id === data.payload.user.id) return;
+                            this.alerts.push(data.payload)
+                            break;
                         default:
                             break;
                     }
@@ -478,6 +493,14 @@ const ChatPage = {
                     stream: "message",
                     payload: {
                         action: "subscribe_to_messages_in_chat",
+                        chat: this.id,
+                        request_id: new Date().getTime(),
+                    },
+                }))
+                this.$store.state.ws.send(JSON.stringify({
+                    stream: "message",
+                    payload: {
+                        action: "join_chat",
                         chat: this.id,
                         request_id: new Date().getTime(),
                     },
@@ -510,7 +533,7 @@ const app = createApp({
         removeNotification(notification){
             var index = this.$store.state.notifications.indexOf(notification)
             if (index > -1) this.$store.state.notifications.splice(index, 1);
-            
+
         },
     },
     computed: {

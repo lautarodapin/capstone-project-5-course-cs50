@@ -31,8 +31,15 @@
                             </li>
                             {% endif %}
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" :class="notifications.length == 0? 'disabled':''" href="#" id="navbarDropdown" role="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <a 
+                                    class="nav-link dropdown-toggle" 
+                                    {% comment %} :class="notifications.length == 0? 'disabled':''"  {% endcomment %}
+                                    href="#" 
+                                    id="navbarDropdown" 
+                                    role="button"
+                                    data-bs-toggle="dropdown" 
+                                    aria-expanded="false"
+                                >
                                     Notifications
                                     <span class="badge bg-secondary">[[notifications.length]]</span>
                                     <span class="visually-hidden">unread messages</span>
