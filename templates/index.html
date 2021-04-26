@@ -20,12 +20,16 @@
                             <li class="nav-item">
                                 <router-link :to="{name: 'ContactPage'}" class="nav-link" :class="this.$route.name == 'ContactPage'?'active':''">Contacts</router-link>
                             </li>
+                            {% if user.is_authenticated %}
                             <li class="nav-item">
                                 <a href="/accounts/logout/" class="nav-link">Logout</a>
                             </li>
+                            {% endif %}
+                            {% if not user.is_authenticated %}
                             <li class="nav-item">
                                 <a href="/accounts/login/" class="nav-link">Login</a>
                             </li>
+                            {% endif %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" :class="notifications.length == 0? 'disabled':''" href="#" id="navbarDropdown" role="button"
                                     data-bs-toggle="dropdown" aria-expanded="false">

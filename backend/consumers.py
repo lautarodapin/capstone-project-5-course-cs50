@@ -140,7 +140,8 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         # maybe do an extra check here to be sure the user has permission
         # send activity to your frontend
         action = "notification"
-        print("chats_message_handler", message)
+        if message["user"]["id"] == self.scope["user"].pk:
+            return
         await self.send_json(dict(
             data=message, 
             action=action, 
@@ -172,9 +173,7 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         chats = await database_sync_to_async(list)(queryset)
         # queryset = await database_sync_to_async(self.scope["user"].chats.all)()
         # chats = await database_sync_to_async(list)(queryset)
-        print("subscribe_to_notifications", chats)
         for chat in chats:
-            print("subscribing to ", chat)
             await self.chats_messages_handler.subscribe(chat=chat.pk)
         return {}, status.HTTP_201_CREATED
 
