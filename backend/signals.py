@@ -1,3 +1,4 @@
+from backend.serializers import UserSerializer
 from django import dispatch
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -17,6 +18,7 @@ def create_token_after_save(sender, instance: User, created: bool, **kwargs):
 def send_notification_after_creating_message(sender, instance: Message, created: bool, **kwargs):
     if created:
         chat_id : int = instance.chat.pk
+        user_serializer = UserSerializer(instance=instance.user, many=False).data
         room_group_name : str = f"chat_{chat_id}"
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -24,6 +26,7 @@ def send_notification_after_creating_message(sender, instance: Message, created:
             {
                 "type": "notification",
                 "message": instance.text,
+                "user": user_serializer,
                 "from": instance.user.pk,
                 "chat": chat_id,
                 "status": status.HTTP_200_OK,

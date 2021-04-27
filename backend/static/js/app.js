@@ -293,7 +293,7 @@ const ContactPage = {
     },
     methods: {
         parseDate(dateString) {
-            if(dateString===null)return "-";
+            if(dateString===null) return "-";
             var date = new Date(dateString)
             return date.toLocaleTimeString() + " " + date.toLocaleDateString()
         },

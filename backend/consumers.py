@@ -73,16 +73,14 @@ class MessageConsumer(ListModelMixin, CreateModelMixin, GenericAsyncAPIConsumer)
 
     async def disconnect(self, code):
         if hasattr(self, "chat_room_name"):
+            user_serializer = await self.current_user()
             await self.channel_layer.group_send(
                 self.chat_room_name,
                 {
                     "type": "notification",
-                    "message": f"{self.scope['user'].username} joined the chat",
+                    "message": f"{self.scope['user'].username} leave the chat",
                     "chat": self.chat,
-                    "user": {
-                        "username": self.scope["user"].username,
-                        "id": self.scope["user"].pk,
-                    },
+                    "user": user_serializer,
                 }
             )
         return await super().disconnect(code)
