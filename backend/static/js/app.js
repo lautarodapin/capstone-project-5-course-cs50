@@ -75,13 +75,15 @@ const store = createStore({
                 }))
             }
             state.ws.addEventListener("message", function(e){
+                let currentChat = router.currentRoute.value.params.id;
                 console.log("store event listener", JSON.parse(e.data))
                 const data = JSON.parse(e.data)
                 switch (data.stream) {
                     case "chat":
                         switch (data.payload.action) {
                             case "notification":
-                                state.notifications.push(data.payload.data)
+                                if (currentChat != data.payload.data.chat.id) 
+                                    state.notifications.push(data.payload.data);
                                 break;
                         
                             default:
@@ -480,6 +482,7 @@ const ChatPage = {
                             break;
                         case "notification":
                             if (this.currentUser.id === data.payload.user.id) return;
+                            if (!data.payload.message.includes("join")) return;
                             this.alerts.push(data.payload)
                             break;
                         default:
