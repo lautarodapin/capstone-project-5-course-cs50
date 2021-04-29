@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .models import (Message, User)
+from .models import (Message, MessageNotification, User)
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -32,3 +32,13 @@ def send_notification_after_creating_message(sender, instance: Message, created:
                 "status": status.HTTP_200_OK,
             },
         )
+
+
+
+@receiver(signal=post_save, sender=Message)
+def create_message_notification(sender, instance: Message, created: bool, **kwargs):
+    if created:
+        from_user : User = instance.user
+        to_user : User = instance.chat.members.exclude(id=from_user.pk).first()
+        if to_user != from_user:
+            MessageNotification.create_from_message(instance, from_user=from_user, to_user=to_user)
