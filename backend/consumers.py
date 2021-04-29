@@ -8,12 +8,13 @@ from asgiref.sync import SyncToAsync, sync_to_async
 from django.core.checks import messages
 from rest_framework.utils.serializer_helpers import ReturnDict
 from rest_framework import status
-from .models import User, Message, Chat
-from .serializers import MessageSerializer, UserSerializer, ChatSerializer
+from .models import MessageNotification, User, Message, Chat
+from .serializers import MessageNotificationSerializer, MessageSerializer, UserSerializer, ChatSerializer
 from channels.exceptions import RequestAborted
+from django.utils.timezone import now
 
 from channelsmultiplexer.demultiplexer import AsyncJsonWebsocketDemultiplexer
-from djangochannelsrestframework.mixins import (ListModelMixin, PatchModelMixin, UpdateModelMixin, CreateModelMixin, DeleteModelMixin)
+from djangochannelsrestframework.mixins import (ListModelMixin, PatchModelMixin, RetrieveModelMixin, UpdateModelMixin, CreateModelMixin, DeleteModelMixin)
 from djangochannelsrestframework.generics import GenericAsyncAPIConsumer
 from djangochannelsrestframework import permissions
 from djangochannelsrestframework.observer import model_observer
@@ -176,9 +177,48 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         return {}, status.HTTP_201_CREATED
 
 
+class MessageNotificationConsumer(GenericAsyncAPIConsumer):
+    queryset = MessageNotification.objects.all()
+    serializer_class = MessageNotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action()
+    def mark_as_read(self, pk: int, **kwargs):
+        notification : MessageNotification = self.get_object(pk=pk)
+        notification.is_read = True
+        notification.read_time = now()
+        notification.save(update_fields=["is_read", "read_time"])
+        return MessageNotificationSerializer(instance=notification).data, status.HTTP_200_OK
+
+    @model_observer(MessageNotification)
+    async def notifications_handler(self, message, observer=None, action=None, **kwargs):
+        await self.send_json(dict(data=message, action=action, response_status=status.HTTP_201_CREATED,))
+
+    @notifications_handler.serializer
+    def notifications_handler(self, instance: MessageNotification, action, **kwargs):
+        return MessageNotificationSerializer(instance=instance, many=False).data 
+
+    @notifications_handler.groups_for_signal
+    def notifications_handler(self, instance: MessageNotification, **kwargs):
+        yield f'-user__{instance.user.pk}'
+
+    @notifications_handler.groups_for_consumer
+    def notifications_handler(self, user: int, **kwargs):
+        if user is not None:
+            yield f'-user__{user}'
+
+    @action()
+    async def subscribe_to_notifications(self, **kwargs):
+        if  "user" not in self.scope or not self.scope["user"].is_authenticated :
+            return {}, status.HTTP_403_FORBIDDEN
+        await self.notifications_handler.subscribe(user=self.scope["user"].pk)
+        return {}, status.HTTP_201_CREATED
+
+
 class DemultiplexerAsyncJson(AsyncJsonWebsocketDemultiplexer):
     applications = {
         "user": UserConsumer.as_asgi(),
         "chat": ChatConsumer.as_asgi(),
         "message": MessageConsumer.as_asgi(),
+        "message_notifications": MessageNotificationConsumer.as_asgi(),
     }
