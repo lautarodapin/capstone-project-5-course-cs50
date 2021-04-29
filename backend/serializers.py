@@ -3,7 +3,7 @@ from rest_framework.serializers import ModelSerializer
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.authtoken.models import Token
 
-from .models import (User, Chat, Message)
+from .models import (MessageNotification, User, Chat, Message)
 
 
 class ChatSerializer(ModelSerializer):
@@ -47,4 +47,33 @@ class MessageSerializer(ModelSerializer):
         data = super().to_representation(instance)
         data["user"] = UserSerializer(instance.user).data
         data["chat"] = ChatSerializer(instance.chat).data
+        return data
+
+
+class MessageNotificationSerializer(ModelSerializer):
+    class Meta:
+        model = MessageNotification
+        fields = [
+            "id",
+            "from_user",
+            "user",
+            "chat",
+            "message",
+            "text",
+            "is_read",
+            "read_time",
+        ]
+        extra_kwargs = {
+            "from_user": {"read_only": True, },
+            "user": {"read_only": True, },
+            "chat": {"read_only": True, },
+            "message": {"read_only": True, },
+        }
+
+    def to_representation(self, instance: MessageNotification):
+        data = super().to_representation(instance)
+        data["from_user"] = UserSerializer(instance.from_user).data
+        data["user"] = UserSerializer(instance.user).data
+        data["chat"] = ChatSerializer(instance.chat).data
+        data["message"] = MessageSerializer(instance.message).data
         return data
