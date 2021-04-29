@@ -32,3 +32,27 @@ class Message(MixinDate):
     user = models.ForeignKey(User, related_name="messages", on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, related_name="messages", on_delete=models.CASCADE, db_index=True)
     text = models.TextField()
+
+
+class MessageNotification(MixinDate):
+    class Meta:
+        abstract = False
+        ordering = ["created_at"]
+
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="message_notifications", on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, related_name="message_notifications", on_delete=models.CASCADE, db_index=True)
+    message = models.OneToOneField(Message, related_name="message_notification", on_delete=models.CASCADE)
+    text = models.TextField()
+    is_read = models.BooleanField(default=False)
+    read_time = models.DateTimeField(null=True, blank=True)
+
+    @classmethod
+    def create_from_message(cls, message: Message, from_user: User, to_user: User):
+        return cls.objects.create(
+            from_user=from_user,
+            user=to_user,
+            chat=message.chat,
+            message=message,
+            text=message.text,
+        )
