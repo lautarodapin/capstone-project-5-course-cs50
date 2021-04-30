@@ -177,10 +177,13 @@ class ChatConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         return {}, status.HTTP_201_CREATED
 
 
-class MessageNotificationConsumer(GenericAsyncAPIConsumer):
+class MessageNotificationConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     queryset = MessageNotification.objects.all()
     serializer_class = MessageNotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self, **kwargs) -> query.QuerySet:
+        return super().get_queryset(**kwargs).filter(user=self.scope["user"])
 
     @action()
     def mark_as_read(self, pk: int, **kwargs):
