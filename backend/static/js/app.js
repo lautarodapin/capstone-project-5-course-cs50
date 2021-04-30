@@ -320,8 +320,9 @@ const ContactPage = {
     <div>
         <div v-if="status === 'done'" class="container-sm">
             <h3 class="display-6">Contacts page</h3>
+            <input type="text" v-model="filterText" class="form-control mt-3 mb-3" placeholder="Search . . ."/>
             <div 
-                v-for="user in users" :key="user.id" 
+                v-for="user in filteredUsers" :key="user.id" 
                 @click="createChat(user)" 
                 class="card mb-2"
             >
@@ -347,6 +348,7 @@ const ContactPage = {
     data() {
         return {
             users: [],
+            filterText: "",
         }
     },
     methods: {
@@ -371,6 +373,7 @@ const ContactPage = {
         },
     },
     computed: {
+        filteredUsers(){ return this.filterText.length == 0 ? this.users : this.users.filter(user => user.username.includes(this.filterText));},
         currentUser() { return this.$store.getters.user; },
         status() { return this.$store.getters.status; },
     },
@@ -384,24 +387,24 @@ const ContactPage = {
 
 const ListChatPage = {
     template: `
-        <div class="container-sm">
-            <div v-if="notifications.length != 0">
-                Notification
-            </div>
-            <h3 class="display-6">Chats Page</h3>
-            <div v-for="chat in chats" :key="chat.id" @click="openChat(chat)" class="card mb-1">
-                <div class="card-body">
-                    <p class="m-0 p-0">
-                        {{otherMember(chat).username}}
-                    </p>
-                    <p class="m-0 p-0">
-                        <small class="text-muted">
-                            {{getLastChatMessage(chat)?.text}}
-                        </small>
-                    </p>
-                </div>
+    <div class="container-sm">
+        <div v-if="notifications.length != 0">
+            Notification
+        </div>
+        <h3 class="display-6">Chats Page</h3>
+        <div v-for="chat in chatsOrder" :key="chat.id" @click="openChat(chat)" class="card mb-1">
+            <div class="card-body">
+                <p class="m-0 p-0">
+                    {{otherMember(chat).username}}
+                </p>
+                <p class="m-0 p-0">
+                    <small class="text-muted">
+                        {{getLastChatMessage(chat)?.text}}
+                    </small>
+                </p>
             </div>
         </div>
+    </div>
     `,
     components: {NotificationDialog, },
     data() {
@@ -424,9 +427,20 @@ const ListChatPage = {
         }
     },
     computed: {
+        chatsOrder(){
+            return this.chats.sort(function (a, b){
+                if (a.messages[a.messages.length - 1].created_at > b.messages[b.messages.length - 1].created_at)
+                    return -1
+                if (a.messages[a.messages.length - 1].created_at < b.messages[b.messages.length - 1].created_at)
+                    return 1
+                return 0
+            })
+        },
+        messageNotifications(){ return this.$store.state.message_notifications;},
         currentUser() { return this.$store.getters.user },
         status() { return this.$store.getters.status; },
         wsConnected() { return this.$store.state.ws.readyState;},
+        notifications(){ return this.$store.state.notifications;},
         notifications(){ return this.$store.state.notifications;},
     },
     created() {
