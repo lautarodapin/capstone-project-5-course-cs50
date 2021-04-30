@@ -75,6 +75,11 @@
                                 </ul>
                             </li>
                         </ul>
+                        {% if user.is_authenticated %}
+                            <li class="nav-item d-flex">
+                                <a href="#" class="nav-link disabled me-2">Welcome {{user.username}}</a>
+                            </li>
+                        {% endif %}
                     </div>
                 </div>
             </nav>

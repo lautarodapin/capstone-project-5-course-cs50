@@ -19,3 +19,10 @@ Mejora visual:
 Bugs:
     ☐ Usuarios que no pertenecen al chat pueden ingresar.
     ☐ Se duplican o triplican los mensajes segun la cantidad de usuarios.
+
+
+Denise:
+    ✔ Nombre de usuario logeado @done(21-04-30 13:20)
+    ☐ Fondo de color
+    ☐ Notificacion en el chat
+    ☐ Notificacion en el contacto
