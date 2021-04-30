@@ -399,6 +399,7 @@ const ListChatPage = {
                 </p>
                 <p class="m-0 p-0">
                     <small class="text-muted">
+                        {{getLastChatMessage(chat)?.user == currentUser.id ? 'Yo: ': ''}}
                         {{getLastChatMessage(chat)?.text}}
                     </small>
                 </p>
