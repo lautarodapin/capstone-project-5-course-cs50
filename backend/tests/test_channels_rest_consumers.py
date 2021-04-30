@@ -33,7 +33,7 @@ def basic_users()->Tuple[User, User, Chat]:
     return user1, user2, chat
 
 @pytest.fixture
-def basic_chats() -> Tuple[User, Chat, Chat, Chat]:
+def basic_chats() -> Tuple[User, User, Chat, Chat, Chat]:
     user1 : User = User.objects.create_user(username="test1", password="testpassword123")
     user2 : User = User.objects.create_user(username="test2", password="testpassword123")
     chat_1 : Chat = Chat.objects.create()
@@ -48,7 +48,7 @@ def basic_chats() -> Tuple[User, Chat, Chat, Chat]:
     chat_3.members.add(user1.pk)
     chat_3.members.add(user2.pk)
     chat_3.save()
-    return user1, chat_1, chat_2, chat_3
+    return user1, user2, chat_1, chat_2, chat_3
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
@@ -138,13 +138,12 @@ async def test_message_consumer_observer(basic_users: Tuple[User, User, Chat]):
 
 
 
-@pytest.mark.skip("TODO fix test")
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, Chat]):
-    user, chat_1, chat_2, chat_3 = basic_chats
+async def test_chat_consumer_subscription(basic_chats: Tuple[User, User, Chat, Chat, Chat]):
+    user_1, user_2, chat_1, chat_2, chat_3 = basic_chats
 
-    communicator = AuthWebsocketCommunicator(application, "/test/chat/", user=user)
+    communicator = AuthWebsocketCommunicator(application, "/test/chat/", user=user_1)
     connected, subprotocol = await communicator.connect()
     assert connected
     
@@ -159,7 +158,7 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
     
     await database_sync_to_async(Message.objects.create)(
         chat=chat_1,
-        user=user,
+        user=user_2,
         text="test"
     )
     response = await communicator.receive_json_from()
@@ -169,7 +168,7 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
     assert response["action"] == "notification"
     await database_sync_to_async(Message.objects.create)(
         chat=chat_2,
-        user=user,
+        user=user_2,
         text="test"
     )
     response = await communicator.receive_json_from()
@@ -179,7 +178,7 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
     assert response["action"] == "notification"
     await database_sync_to_async(Message.objects.create)(
         chat=chat_3,
-        user=user,
+        user=user_2,
         text="test"
     )
     response = await communicator.receive_json_from()
@@ -191,7 +190,7 @@ async def test_chat_consumer_subscription(basic_chats: Tuple[User, Chat, Chat, C
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_subscribe_to_messages_in_chat_authentication(basic_chats: Tuple[User, Chat, Chat, Chat]):
-    user, chat_1, chat_2, chat_3 = basic_chats
+    user, _, chat_1, chat_2, chat_3 = basic_chats
 
     communicator = AuthWebsocketCommunicator(application, "/test/message/")
     connected, subprotocol = await communicator.connect()
@@ -211,7 +210,7 @@ async def test_subscribe_to_messages_in_chat_authentication(basic_chats: Tuple[U
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_subscribe_to_chat_notification_without_been_login(basic_chats: Tuple[User, Chat, Chat, Chat]):
-    user, chat_1, chat_2, chat_3 = basic_chats
+    user, _, chat_1, chat_2, chat_3 = basic_chats
 
     communicator = AuthWebsocketCommunicator(application, "/test/chat/")
     connected, subprotocol = await communicator.connect()
