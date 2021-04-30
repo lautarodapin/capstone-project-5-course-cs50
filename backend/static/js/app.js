@@ -25,6 +25,7 @@ const store = createStore({
             status: "done",
             ws: null,
             notifications: [],
+            message_notifications: [],
         }
     },
     getters: {
@@ -46,6 +47,18 @@ const store = createStore({
         createWs(state) {
             state.ws = new WebSocket(ws_path)
         },
+        markChatNotificationsAsRead(state, chat_id){
+            let notif = state.message_notifications.filter(e=>e.chat.id == chat_id)
+            notif.map(e => state.ws.send(JSON.stringify({
+                stream: "message_notifications",
+                payload: {
+                    action: "mark_as_read",
+                    request_id: new Date().getTime(),
+                    pk: e.id,
+                }
+            })))
+        }
+
     },
     actions: {
         login({ commit }) {
@@ -67,7 +80,21 @@ const store = createStore({
             commit("createWs")
             state.ws.onopen = function(){
                 state.ws.send(JSON.stringify({
+                    stream: "message_notifications",
+                    payload: {
+                        action: "list",
+                        request_id: new Date().getTime(),
+                    }
+                }))
+                state.ws.send(JSON.stringify({
                     stream: "chat",
+                    payload: {
+                        action: "subscribe_to_notifications",
+                        request_id: new Date().getTime(),
+                    }
+                }))
+                state.ws.send(JSON.stringify({
+                    stream: "message_notifications",
                     payload: {
                         action: "subscribe_to_notifications",
                         request_id: new Date().getTime(),
@@ -79,6 +106,35 @@ const store = createStore({
                 console.log("store event listener", JSON.parse(e.data))
                 const data = JSON.parse(e.data)
                 switch (data.stream) {
+                    case "message_notifications":
+                        switch (data.payload.action) {
+                            case "mark_as_read":
+                                var index = state.message_notifications.findIndex(e => e.id == data.payload.data.id)
+                                state.message_notifications[index] = data.payload.data                                
+                                break;
+                            case "list":
+                                state.message_notifications = data.payload.data
+                                break;
+                            case "create":
+                                // TODO don't add if current chat
+                                state.message_notifications.push(data.payload.data)
+                                if (data.payload.data.chat.id == currentChat
+                                    && !data.payload.data.is_read
+                                    ){
+                                    state.ws.send(JSON.stringify({
+                                        stream: "message_notifications",
+                                        payload: {
+                                            action: "mark_as_read",
+                                            request_id: new Date().getTime(),
+                                            pk: data.payload.data.id,
+                                        }
+                                    }))
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
                     case "chat":
                         switch (data.payload.action) {
                             case "notification":
@@ -255,7 +311,7 @@ const ChatPaper = {
     },
     updated(){
         this.$nextTick(() => this.scrollBottom()) ;
-    }
+    },
 
 }
 
@@ -527,6 +583,7 @@ const ChatPage = {
             })
             this.$store.state.ws.addEventListener("message", this.onMessageHandler);
             // TODO add reconnect
+            this.$store.commit("markChatNotificationsAsRead", this.id);
     },
     mounted(){
         this.scrollBottom();
@@ -548,13 +605,31 @@ const app = createApp({
         removeNotification(notification){
             var index = this.$store.state.notifications.indexOf(notification)
             if (index > -1) this.$store.state.notifications.splice(index, 1);
-
         },
+        markNotificationAsRead(notification){
+            this.ws.send(JSON.stringify({
+                stream: "message_notifications",
+                payload: {
+                    action: "mark_as_read",
+                    request_id: new Date().getTime(),
+                    pk: notification.id,
+                }
+            }))
+        }
     },
     computed: {
         user() { return this.$store.getters.user; },
         status() { return this.$store.getters.status; },
         notifications(){ return this.$store.state.notifications;},
+        ws(){ return this.$store.state.ws;},
+        messageNotifications(){ return this.$store.state.message_notifications;},
+        currentNotifications(){
+            let notifications = this.$store.state.message_notifications;
+            if (this.$route.name === "ChatPage")
+                return notifications.filter(e => e.chat.id != this.$route.params.id)
+            return notifications
+        },
+        countUnreadNotifications(){ return this.currentNotifications.filter(e => !e.is_read).length;},
     },
     created() {
         this.$store.dispatch("createWs")

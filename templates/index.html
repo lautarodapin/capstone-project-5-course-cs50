@@ -41,20 +41,34 @@
                                     aria-expanded="false"
                                 >
                                     Notifications
-                                    <span class="badge bg-secondary">[[notifications.length]]</span>
+                                    <span class="badge bg-secondary">[[countUnreadNotifications]]</span>
                                     <span class="visually-hidden">unread messages</span>
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <li v-for="(notification, index) in notifications" :key="index">
+                                    <li v-for="(notification, index) in currentNotifications.slice().reverse()" :key="index">
                                         <a class="dropdown-item" href="#">
-                                            <router-link :to="{name: 'ChatPage', params:{id: notification.chat.id}}"
-                                                class="text-reset"
-                                                @click="removeNotification(notification)"
-                                            >
-                                                <strong>
-                                                    [[notification.user.username]] 
-                                                </strong>
-                                                [[notification.text]]
+                                            <router-link 
+                                                :to="{name: 'ChatPage', params:{id: notification.chat.id}}"
+                                                class="text-decoration-none text-dark"
+                                                :class="notification.is_read ? 'text-muted' : ''"
+                                                @click="markNotificationAsRead(notification)"
+                                            >   
+                                                <div class="row">
+                                                    <div class="col align-items-start">
+                                                        <svg v-if="notification.is_read" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
+                                                            <circle cx="8" cy="8" r="8"/>
+                                                        </svg>
+                                                        <svg v-if="!notification.is_read" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle" viewBox="0 0 16 16">
+                                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div class="col align-items-end">
+                                                        <strong>
+                                                            [[notification.user.username]] 
+                                                        </strong>
+                                                        [[notification.text]]
+                                                    </div>
+                                                </div>
                                             </router-link>
                                         </a>
                                     </li>
@@ -69,6 +83,7 @@
             <div v-for="notification in notifications" :key="notification.id">
                 [[notification.message]]
             </div>
+            {% comment %} [[messageNotifications]] {% endcomment %}
             <router-view></router-view>
         </main>
     </div>
