@@ -2,7 +2,7 @@
 {% extends 'layout.html' %}
 {% load static %}
 {% block content %}
-   <div id="app" style="height: 100vh;">
+   <div id="app" style="">
         <header>
             <nav class="navbar navbar-expand-lg navbar-light bg-light">
                 <div class="container-fluid">
@@ -87,11 +87,12 @@
             </nav>
         </header>
         <main>
-            <div v-for="notification in notifications" :key="notification.id">
+            {% comment %} <div v-for="notification in notifications" :key="notification.id">
                 [[notification.message]]
-            </div>
+            </div> {% endcomment %}
             {% comment %} [[messageNotifications]] {% endcomment %}
-            <router-view></router-view>
+            <router-view>
+            </router-view>
         </main>
     </div>
     <footer>

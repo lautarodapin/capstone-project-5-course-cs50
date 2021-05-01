@@ -251,19 +251,33 @@ const MessageIncoming = {
     template: `
     <div class="alert alert-dark me-5 p-0">
         <p class="ps-2 pt-1 pb-1 mb-0">{{message.text}}</p>
-        <small class="text-muted p-0 ps-2 m-0">{{message.created_at}}</small>
+        <small class="text-muted p-0 ps-2 m-0">{{parseDate(message.created_at)}}</small>
     </div>
     `,
     props:["message"],
+    methods:{
+        parseDate(dateString) {
+            if(dateString===null) return "-";
+            var date = new Date(dateString)
+            return date.toLocaleTimeString() + " " + date.toLocaleDateString()
+        },
+    },
 }
 const MessageOutgoing = {
     template: `
     <div class="alert alert-info ms-5 p-0">
         <p class="pe-2 pt-1 pb-1 mb-0">{{message.text}}</p>
-        <small class="text-muted p-0 pe-2 m-0">{{message.created_at}}</small>
+        <small class="text-muted p-0 pe-2 m-0">{{parseDate(message.created_at)}}</small>
     </div>
     `,
     props:["message"],
+    methods:{
+        parseDate(dateString) {
+            if(dateString===null) return "-";
+            var date = new Date(dateString)
+            return date.toLocaleTimeString() + " " + date.toLocaleDateString()
+        },
+    },
 }
 
 
@@ -457,12 +471,14 @@ const ListChatPage = {
 const ChatPage = {
     template: `
         <div>
-            <div v-if="status === 'done'" class="alert alert-dismissible fade show">
-                <div v-for="(alert, index) in alerts" :key="index"
-                    class="alert alert-info" role="alert"
-                >
-                    {{alert.message}}
-                    <button @click="removeAlert(alert)" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div v-if="status === 'done'">
+                <div v-if="alerts.length > 0" class="alert alert-dismissible fade show">
+                    <div v-for="(alert, index) in alerts" :key="index"
+                        class="alert alert-info" role="alert"
+                    >
+                        {{alert.message}}
+                        <button @click="removeAlert(alert)" type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 </div>
                 <ChatPaper :messages="messages" @createMessage="createMessage"/>
             </div>
