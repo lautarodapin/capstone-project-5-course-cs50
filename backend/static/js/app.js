@@ -86,13 +86,13 @@ const store = createStore({
                         request_id: new Date().getTime(),
                     }
                 }))
-                state.ws.send(JSON.stringify({
-                    stream: "chat",
-                    payload: {
-                        action: "subscribe_to_notifications",
-                        request_id: new Date().getTime(),
-                    }
-                }))
+                // state.ws.send(JSON.stringify({
+                //     stream: "chat",
+                //     payload: {
+                //         action: "subscribe_to_notifications",
+                //         request_id: new Date().getTime(),
+                //     }
+                // }))
                 state.ws.send(JSON.stringify({
                     stream: "message_notifications",
                     payload: {
@@ -562,10 +562,7 @@ const ChatPage = {
                     switch (data.payload.action) {
                         case "create":
                             if (data.payload.data === null) return;
-                            this.messages.push(data.payload.data)
-                            /**
-                             * TODO como agrego esta funciona al resto de funciones como notificaciones?
-                             */
+                            this.messages.push(data.payload.data);
                             break;
                         case "notification":
                             if (this.currentUser.id === data.payload.user.id) return;
@@ -610,7 +607,7 @@ const ChatPage = {
                 this.$store.commit("status", "done")
             })
             .catch(([chat_error, message_error]) => {
-                console.log(error)
+                console.log(chat_error, message_error)
             })
             this.$store.state.ws.addEventListener("message", this.onMessageHandler);
             // TODO add reconnect
@@ -622,6 +619,14 @@ const ChatPage = {
     beforeUnmount(){
         this.$store.state.ws.removeEventListener("message", this.onMessageHandler)
     },
+}
+
+const NotFound404 = {
+    template: `
+    <div class="container-sm text-center display-1">
+        Page not found
+    </div>
+    `,
 }
 
 const app = createApp({
@@ -668,9 +673,10 @@ const app = createApp({
 })
 
 const routes = [
-    { path: '/', name: "ListChatPage", component: ListChatPage },
-    { path: '/contacts', name: "ContactPage", component: ContactPage },
-    { path: '/chat/:id', name: "ChatPage", component: ChatPage },
+    { path: '/', name: "ListChatPage", component: ListChatPage, meta: {title: "Chats", } },
+    { path: '/contacts', name: "ContactPage", component: ContactPage, meta: {title: "Contacts", } },
+    { path: '/chat/:id', name: "ChatPage", component: ChatPage, meta: {title: "Chat", } },
+    { path: '/:pathMatch(.*)*', name: "NotFound404", component: NotFound404, meta: {title: "404", } },
 ]
 
 const router = createRouter({
@@ -691,6 +697,11 @@ router.beforeEach(async (to, from, next) => {
     next()
 })
 
+const DEFAULT_TITLE = "Chat app"
+
+router.afterEach((to, from) => {
+    document.title = to.meta.title || DEFAULT_TITLE
+})
 
 app.use(router)
 app.use(store)
