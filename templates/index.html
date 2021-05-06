@@ -35,7 +35,10 @@
                                     <span class="visually-hidden">unread messages</span>
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <li v-for="(notification, index) in currentNotifications.slice().reverse()" :key="index">
+                                    <li v-if="currentNotifications.length == 0">
+                                        <a href="#" class="dropdown-item disabled">You haven't any notifications</a>
+                                    </li>
+                                    <li v-else v-for="(notification, index) in currentNotifications.slice().reverse()" :key="index">
                                         <a class="dropdown-item" href="#">
                                             <router-link 
                                                 :to="{name: 'ChatPage', params:{id: notification.chat.id}}"
