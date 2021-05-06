@@ -406,17 +406,26 @@ const ListChatPage = {
             Notification
         </div>
         <h3 class="display-6">Chats Page</h3>
-        <div v-for="chat in chatsOrder" :key="chat.id" @click="openChat(chat)" class="card mb-1">
-            <div class="card-body">
-                <p class="m-0 p-0">
-                    {{otherMember(chat).username}}
-                </p>
-                <p class="m-0 p-0">
-                    <small class="text-muted">
-                        {{getLastChatMessage(chat)?.user == currentUser.id ? 'Yo: ': ''}}
-                        {{getLastChatMessage(chat)?.text}}
-                    </small>
-                </p>
+        <div v-if="chatsOrder == 0">
+            <p class="">
+                You don't have any chats yet! go to the 
+                <router-link :to="{name: 'ContactPage'}">contacts</router-link>
+                 page!
+            </p>
+        </div>
+        <div v-else>
+            <div v-for="chat in chatsOrder" :key="chat.id" @click="openChat(chat)" class="card mb-1">
+                <div class="card-body">
+                    <p class="m-0 p-0">
+                        {{otherMember(chat).username}}
+                    </p>
+                    <p class="m-0 p-0">
+                        <small class="text-muted">
+                            {{getLastChatMessage(chat)?.user == currentUser.id ? 'Yo: ': ''}}
+                            {{getLastChatMessage(chat)?.text}}
+                        </small>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -443,6 +452,7 @@ const ListChatPage = {
     },
     computed: {
         chatsOrder(){
+            if (this.chats.length == 0) return this.chats;
             return this.chats.sort(function (a, b){
                 if (a.messages[a.messages.length - 1].created_at > b.messages[b.messages.length - 1].created_at)
                     return -1
